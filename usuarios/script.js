@@ -28,12 +28,15 @@ document.getElementById("app-usuarios").hidden = !autorizado;
 document.getElementById("acesso-negado").hidden = autorizado;
 
 const linkEstoque = document.getElementById("link-estoque");
+const linkPromocoes = document.getElementById("link-promocoes");
 const linkLoja = document.getElementById("link-loja");
 
 if (autorizado) {
     const sessaoAtual = localStorage.getItem(CHAVE_SESSAO);
-    linkEstoque.href = `../estoque/index.html?sessao=${encodeURIComponent(sessaoAtual)}`;
-    linkLoja.href = `../loja/index.html?sessao=${encodeURIComponent(sessaoAtual)}`;
+    const parametro = encodeURIComponent(sessaoAtual);
+    linkEstoque.href = `../estoque/index.html?sessao=${parametro}`;
+    linkPromocoes.href = `../promocoes/index.html?sessao=${parametro}`;
+    linkLoja.href = `../loja/index.html?sessao=${parametro}`;
 }
 
 const statTotal = document.getElementById("stat-total");

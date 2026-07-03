@@ -27,6 +27,7 @@
             </div>
             <nav class="topbar-nav">
                 <a href="../usuarios/index.html" id="link-usuarios" class="link-loja">Usuários</a>
+                <a href="../promocoes/index.html" id="link-promocoes" class="link-loja">Promoções</a>
                 <a href="../loja/index.html" class="link-loja">Ver loja</a>
             </nav>
         </header>
@@ -54,8 +55,26 @@
                         <input type="hidden" id="produto-id">
 
                         <div class="campo">
+                            <label for="foto">Foto do produto (opcional)</label>
+                            <input type="file" id="foto" accept="image/*">
+                            <img id="foto-preview" class="foto-preview" alt="Pré-visualização da foto" hidden>
+                        </div>
+
+                        <div class="campo">
                             <label for="nome">Nome do produto</label>
-                            <input type="text" id="nome" placeholder="Ex: Teclado mecânico" required>
+                            <input type="text" id="nome" placeholder="Ex: Teclado mecânico RGB" required>
+                        </div>
+
+                        <div class="campo-linha">
+                            <div class="campo">
+                                <label for="tipo">Produto</label>
+                                <input type="text" id="tipo" placeholder="Ex: Teclado" required>
+                            </div>
+
+                            <div class="campo">
+                                <label for="marca">Marca</label>
+                                <input type="text" id="marca" placeholder="Ex: Redragon" required>
+                            </div>
                         </div>
 
                         <div class="campo-linha">
@@ -68,6 +87,19 @@
                                 <label for="preco">Preço (R$)</label>
                                 <input type="number" id="preco" min="0" step="0.01" placeholder="0,00" required>
                             </div>
+                        </div>
+
+                        <div class="campo">
+                            <label for="descricao">Descrição do produto (opcional)</label>
+                            <textarea id="descricao" rows="3" placeholder="Detalhes, especificações, o que vem na caixa..."></textarea>
+                        </div>
+
+                        <div class="campo campo-checkbox">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="no-carrossel">
+                                Adicionar ao carrossel
+                            </label>
+                            <p class="ajuda">Se marcado, a foto do produto (acima) aparece no carrossel da loja e leva direto para a página deste produto.</p>
                         </div>
 
                         <div class="botoes">
@@ -94,7 +126,10 @@
                             <thead>
                                 <tr>
                                     <th class="col-checkbox"><input type="checkbox" id="selecionar-todos"></th>
+                                    <th class="col-foto"></th>
                                     <th>Nome</th>
+                                    <th>Produto</th>
+                                    <th>Marca</th>
                                     <th>Quantidade</th>
                                     <th>Preço</th>
                                     <th></th>

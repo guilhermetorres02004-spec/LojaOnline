@@ -84,6 +84,14 @@ body {
     height: 24px;
 }
 
+.brand-icon-letra {
+    font-size: 1.4rem;
+    font-weight: 800;
+    line-height: 1;
+    font-family: "Inter", Arial, Helvetica, sans-serif;
+    user-select: none;
+}
+
 .brand h1 {
     font-size: 1.2rem;
     font-weight: 700;

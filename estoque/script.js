@@ -2,6 +2,14 @@ const CHAVE_ARMAZENAMENTO = "estoque-produtos";
 const CHAVE_SESSAO = "loja-usuario-logado";
 const LIMIAR_ESTOQUE_BAIXO = 5;
 
+const iconeFotoVazia = `
+    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M3 7L12 3L21 7V17L12 21L3 17V7Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
+        <path d="M3 7L12 11L21 7" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
+        <path d="M12 11V21" stroke="currentColor" stroke-width="1.4"/>
+    </svg>
+`;
+
 function importarSessaoDaUrl() {
     const parametros = new URLSearchParams(window.location.search);
     const sessaoCodificada = parametros.get("sessao");
@@ -30,15 +38,23 @@ document.getElementById("acesso-negado").hidden = autorizado;
 
 if (autorizado) {
     const sessaoAtual = localStorage.getItem(CHAVE_SESSAO);
-    document.getElementById("link-usuarios").href = `../usuarios/index.html?sessao=${encodeURIComponent(sessaoAtual)}`;
+    const parametro = encodeURIComponent(sessaoAtual);
+    document.getElementById("link-usuarios").href = `../usuarios/index.html?sessao=${parametro}`;
+    document.getElementById("link-promocoes").href = `../promocoes/index.html?sessao=${parametro}`;
 }
 
 const form = document.getElementById("form-produto");
 const formTitulo = document.getElementById("form-titulo");
 const campoId = document.getElementById("produto-id");
 const campoNome = document.getElementById("nome");
+const campoFoto = document.getElementById("foto");
+const fotoPreview = document.getElementById("foto-preview");
+const campoTipo = document.getElementById("tipo");
+const campoMarca = document.getElementById("marca");
 const campoQuantidade = document.getElementById("quantidade");
 const campoPreco = document.getElementById("preco");
+const campoDescricao = document.getElementById("descricao");
+const campoNoCarrossel = document.getElementById("no-carrossel");
 const btnSalvar = document.getElementById("btn-salvar");
 const btnCancelar = document.getElementById("btn-cancelar");
 const listaProdutos = document.getElementById("lista-produtos");
@@ -53,6 +69,20 @@ const filtroProduto = document.getElementById("filtro-produto");
 
 const selecionados = new Set();
 let filtroAtual = "todos";
+let fotoAtual = "";
+
+campoFoto.addEventListener("change", () => {
+    const arquivo = campoFoto.files[0];
+    if (!arquivo) return;
+
+    const leitor = new FileReader();
+    leitor.onload = () => {
+        fotoAtual = leitor.result;
+        fotoPreview.src = fotoAtual;
+        fotoPreview.hidden = false;
+    };
+    leitor.readAsDataURL(arquivo);
+});
 
 function carregarProdutos() {
     const dados = localStorage.getItem(CHAVE_ARMAZENAMENTO);
@@ -75,20 +105,24 @@ function atualizarBotaoRemoverSelecionados() {
         : "Remover selecionado";
 }
 
+function obterTipo(produto) {
+    return produto.tipo || "Sem categoria";
+}
+
 function atualizarFiltroProduto(produtos) {
-    const nomesUnicos = [...new Set(produtos.map((produto) => produto.nome))].sort((a, b) =>
+    const tiposUnicos = [...new Set(produtos.map((produto) => obterTipo(produto)))].sort((a, b) =>
         a.localeCompare(b, "pt-br")
     );
 
-    if (!nomesUnicos.includes(filtroAtual) && filtroAtual !== "todos") {
+    if (!tiposUnicos.includes(filtroAtual) && filtroAtual !== "todos") {
         filtroAtual = "todos";
     }
 
-    filtroProduto.innerHTML = `<option value="todos">Todos os produtos</option>`;
-    nomesUnicos.forEach((nome) => {
+    filtroProduto.innerHTML = `<option value="todos">Todos os tipos</option>`;
+    tiposUnicos.forEach((tipo) => {
         const opcao = document.createElement("option");
-        opcao.value = nome;
-        opcao.textContent = nome;
+        opcao.value = tipo;
+        opcao.textContent = tipo;
         filtroProduto.appendChild(opcao);
     });
     filtroProduto.value = filtroAtual;
@@ -104,7 +138,7 @@ function renderizarProdutos() {
     atualizarFiltroProduto(produtos);
     const produtosFiltrados = filtroAtual === "todos"
         ? produtos
-        : produtos.filter((produto) => produto.nome === filtroAtual);
+        : produtos.filter((produto) => obterTipo(produto) === filtroAtual);
 
     listaProdutos.innerHTML = "";
     textoVazio.hidden = produtosFiltrados.length > 0;
@@ -125,9 +159,15 @@ function renderizarProdutos() {
         const marcado = selecionados.has(produto.id);
         const linha = document.createElement("tr");
         linha.className = marcado ? "linha-selecionada" : "";
+        const foto = produto.foto
+            ? `<img src="${produto.foto}" class="foto-miniatura" alt="Foto de ${produto.nome}">`
+            : `<span class="foto-miniatura-vazia">${iconeFotoVazia}</span>`;
         linha.innerHTML = `
             <td><input type="checkbox" class="checkbox-produto" data-id="${produto.id}" ${marcado ? "checked" : ""}></td>
+            <td>${foto}</td>
             <td class="nome-produto">${produto.nome}</td>
+            <td>${produto.tipo || "—"}</td>
+            <td>${produto.marca || "—"}</td>
             <td><span class="qtd-badge ${estoqueBaixo ? "qtd-baixa" : ""}">${produto.quantidade}</span></td>
             <td>${formatarPreco(produto.preco)}</td>
             <td>
@@ -148,6 +188,9 @@ function renderizarProdutos() {
 function limparFormulario() {
     form.reset();
     campoId.value = "";
+    fotoAtual = "";
+    fotoPreview.hidden = true;
+    fotoPreview.src = "";
     formTitulo.textContent = "Novo produto";
     btnSalvar.textContent = "Cadastrar";
     btnCancelar.hidden = true;
@@ -159,24 +202,38 @@ form.addEventListener("submit", (evento) => {
     const produtos = carregarProdutos();
     const id = campoId.value;
     const nome = campoNome.value.trim();
+    const tipo = campoTipo.value.trim();
+    const marca = campoMarca.value.trim();
     const quantidade = Number(campoQuantidade.value);
     const preco = Number(campoPreco.value);
+    const descricao = campoDescricao.value.trim();
+    const noCarrossel = campoNoCarrossel.checked;
 
-    if (!nome || quantidade < 0 || preco < 0) {
+    if (!nome || !tipo || !marca || quantidade < 0 || preco < 0) {
         return;
     }
 
     if (id) {
         const produto = produtos.find((item) => item.id === id);
         produto.nome = nome;
+        produto.tipo = tipo;
+        produto.marca = marca;
         produto.quantidade = quantidade;
         produto.preco = preco;
+        produto.foto = fotoAtual;
+        produto.descricao = descricao;
+        produto.noCarrossel = noCarrossel;
     } else {
         produtos.push({
             id: Date.now().toString(),
             nome,
+            tipo,
+            marca,
             quantidade,
             preco,
+            foto: fotoAtual,
+            descricao,
+            noCarrossel,
         });
     }
 
@@ -204,8 +261,21 @@ listaProdutos.addEventListener("click", (evento) => {
         const produto = produtos.find((item) => item.id === id);
         campoId.value = produto.id;
         campoNome.value = produto.nome;
+        campoTipo.value = produto.tipo || "";
+        campoMarca.value = produto.marca || "";
         campoQuantidade.value = produto.quantidade;
         campoPreco.value = produto.preco;
+        campoDescricao.value = produto.descricao || "";
+        campoNoCarrossel.checked = Boolean(produto.noCarrossel);
+        campoFoto.value = "";
+        fotoAtual = produto.foto || "";
+        if (fotoAtual) {
+            fotoPreview.src = fotoAtual;
+            fotoPreview.hidden = false;
+        } else {
+            fotoPreview.hidden = true;
+            fotoPreview.src = "";
+        }
         formTitulo.textContent = "Editar produto";
         btnSalvar.textContent = "Salvar alterações";
         btnCancelar.hidden = false;
@@ -226,7 +296,7 @@ listaProdutos.addEventListener("change", (evento) => {
     }
 
     const produtosVisiveis = carregarProdutos().filter((produto) =>
-        filtroAtual === "todos" || produto.nome === filtroAtual
+        filtroAtual === "todos" || obterTipo(produto) === filtroAtual
     );
     selecionarTodos.checked = produtosVisiveis.length > 0 &&
         produtosVisiveis.every((produto) => selecionados.has(produto.id));
@@ -235,7 +305,7 @@ listaProdutos.addEventListener("change", (evento) => {
 
 selecionarTodos.addEventListener("change", () => {
     const produtosVisiveis = carregarProdutos().filter((produto) =>
-        filtroAtual === "todos" || produto.nome === filtroAtual
+        filtroAtual === "todos" || obterTipo(produto) === filtroAtual
     );
 
     if (selecionarTodos.checked) {
