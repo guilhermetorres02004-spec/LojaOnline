@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Usuários cadastrados</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app" id="app-usuarios">
+        <header class="topbar">
+            <div class="brand">
+                <span class="brand-icon">
+                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="9" cy="8" r="3.2" stroke="currentColor" stroke-width="1.6"/>
+                        <path d="M3.5 20C3.5 16.5 6 14.2 9 14.2C12 14.2 14.5 16.5 14.5 20" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+                        <path d="M15.5 9.5C16.7 9.5 17.7 8.4 17.7 7C17.7 5.6 16.7 4.5 15.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+                        <path d="M16.5 14.3C18.9 14.7 20.5 16.6 20.5 20" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+                    </svg>
+                </span>
+                <div>
+                    <h1>Usuários cadastrados</h1>
+                    <p>Veja quem mais compra para planejar promoções</p>
+                </div>
+            </div>
+            <nav class="topbar-nav">
+                <a href="../estoque/index.html" id="link-estoque" class="link-loja">Estoque</a>
+                <a href="../loja/index.html" id="link-loja" class="link-loja">Ver loja</a>
+            </nav>
+        </header>
+
+        <main class="content">
+            <section class="stats">
+                <div class="stat-card">
+                    <span class="stat-label">Usuários cadastrados</span>
+                    <span class="stat-value" id="stat-total">0</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-label">Clientes que já compraram</span>
+                    <span class="stat-value" id="stat-compradores">0</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-label">Receita gerada</span>
+                    <span class="stat-value" id="stat-receita">R$ 0,00</span>
+                </div>
+            </section>
+
+            <div class="grid">
+                <section class="card form-card">
+                    <h2>Novo usuário</h2>
+
+                    <button type="button" id="btn-abrir-form-usuario" class="btn btn-primary btn-largo">Cadastrar usuário</button>
+
+                    <form id="form-criar-usuario" hidden autocomplete="off">
+                        <div class="campo">
+                            <label for="novo-nome">Nome</label>
+                            <input type="text" id="novo-nome" placeholder="Nome completo" autocomplete="off" required>
+                        </div>
+
+                        <div class="campo">
+                            <label for="novo-email">E-mail</label>
+                            <input type="email" id="novo-email" placeholder="pessoa@email.com" autocomplete="off" required>
+                        </div>
+
+                        <div class="campo">
+                            <label for="novo-cpf">CPF</label>
+                            <input type="text" id="novo-cpf" placeholder="000.000.000-00" inputmode="numeric" maxlength="14" autocomplete="off" required>
+                        </div>
+
+                        <div class="campo">
+                            <label for="novo-senha">Senha</label>
+                            <input type="password" id="novo-senha" placeholder="Crie uma senha" minlength="4" autocomplete="new-password" required>
+                        </div>
+
+                        <div class="campo">
+                            <label for="novo-papel">Permissão</label>
+                            <select id="novo-papel">
+                                <option value="cliente">Cliente</option>
+                                <option value="admin">Administrador</option>
+                            </select>
+                        </div>
+
+                        <p class="mensagem" id="mensagem-criar-usuario" hidden></p>
+
+                        <div class="botoes">
+                            <button type="submit" class="btn btn-primary">Criar usuário</button>
+                            <button type="button" id="btn-cancelar-form-usuario" class="btn btn-secondary">Cancelar</button>
+                        </div>
+                    </form>
+                </section>
+
+                <section class="card table-card">
+                    <div class="table-header">
+                        <h2>Usuários</h2>
+                        <div class="table-header-acoes">
+                            <input type="text" id="busca-usuario" class="busca-input" placeholder="Buscar por nome ou e-mail...">
+                            <select id="ordenar-usuarios" class="filtro-select">
+                                <option value="compras">Mais compras primeiro</option>
+                                <option value="gasto">Mais gasto primeiro</option>
+                                <option value="nome">Nome (A-Z)</option>
+                            </select>
+                            <span class="badge" id="contador-usuarios">0 usuários</span>
+                        </div>
+                    </div>
+
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Nome</th>
+                                    <th>E-mail</th>
+                                    <th>CPF</th>
+                                    <th>Papel</th>
+                                    <th>Compras</th>
+                                    <th>Total gasto</th>
+                                </tr>
+                            </thead>
+                            <tbody id="lista-usuarios"></tbody>
+                        </table>
+                    </div>
+
+                    <div class="vazio" id="vazio-usuarios" hidden>
+                        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="12" cy="8" r="3.5" stroke="currentColor" stroke-width="1.4"/>
+                            <path d="M4.5 20.5C4.5 16.5 7.8 13.7 12 13.7C16.2 13.7 19.5 16.5 19.5 20.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+                        </svg>
+                        <p id="vazio-usuarios-texto">Nenhum usuário cadastrado ainda.</p>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <div class="acesso-negado" id="acesso-negado" hidden>
+        <section class="card">
+            <h2>Acesso restrito</h2>
+            <p>Esta área é exclusiva para administradores.</p>
+            <a href="../loja/index.html" class="btn btn-primary">Voltar para a loja</a>
+        </section>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

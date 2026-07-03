@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Entrar ou criar conta</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app">
+        <a href="../loja/index.html" class="link-loja">&larr; Voltar para a loja</a>
+
+        <section class="card auth-card">
+            <div class="brand">
+                <span class="brand-icon">
+                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M6 8L7 3H17L18 8" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+                        <path d="M4 8H20L19 21H5L4 8Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+                        <path d="M9 11V13" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+                        <path d="M15 11V13" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+                    </svg>
+                </span>
+                <div>
+                    <h1>Loja Online</h1>
+                    <p>Acesse sua conta ou crie uma nova</p>
+                </div>
+            </div>
+
+            <div class="abas">
+                <button type="button" class="aba ativa" id="aba-entrar" data-aba="entrar">Entrar</button>
+                <button type="button" class="aba" id="aba-cadastrar" data-aba="cadastrar">Criar conta</button>
+            </div>
+
+            <p class="mensagem" id="mensagem" hidden></p>
+
+            <form id="form-entrar" class="form-auth">
+                <div class="campo">
+                    <label for="entrar-email">E-mail</label>
+                    <input type="email" id="entrar-email" placeholder="voce@email.com" required>
+                </div>
+
+                <div class="campo">
+                    <label for="entrar-senha">Senha</label>
+                    <input type="password" id="entrar-senha" placeholder="Sua senha" required>
+                </div>
+
+                <button type="submit" class="btn btn-primary">Entrar</button>
+            </form>
+
+            <form id="form-cadastrar" class="form-auth" hidden>
+                <div class="campo">
+                    <label for="cadastro-nome">Nome</label>
+                    <input type="text" id="cadastro-nome" placeholder="Seu nome" required>
+                </div>
+
+                <div class="campo">
+                    <label for="cadastro-email">E-mail</label>
+                    <input type="email" id="cadastro-email" placeholder="voce@email.com" required>
+                </div>
+
+                <div class="campo">
+                    <label for="cadastro-cpf">CPF</label>
+                    <input type="text" id="cadastro-cpf" placeholder="000.000.000-00" inputmode="numeric" maxlength="14" required>
+                    <p class="ajuda">Usamos para identificar suas compras e enviar promoções exclusivas.</p>
+                </div>
+
+                <div class="campo">
+                    <label for="cadastro-senha">Senha</label>
+                    <input type="password" id="cadastro-senha" placeholder="Crie uma senha" minlength="4" required>
+                </div>
+
+                <div class="campo">
+                    <label for="cadastro-confirmar">Confirmar senha</label>
+                    <input type="password" id="cadastro-confirmar" placeholder="Repita a senha" minlength="4" required>
+                </div>
+
+                <button type="submit" class="btn btn-primary">Criar conta</button>
+            </form>
+        </section>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

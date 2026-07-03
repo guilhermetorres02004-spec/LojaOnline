@@ -1,0 +1,211 @@
+:root {
+    --bg: #f4f5f7;
+    --surface: #ffffff;
+    --border: #e5e7eb;
+    --text: #1f2430;
+    --text-muted: #6b7280;
+    --primary: #4f46e5;
+    --primary-hover: #4338ca;
+    --primary-soft: #eef2ff;
+    --danger: #dc2626;
+    --danger-soft: #fef2f2;
+    --success: #16a34a;
+    --success-soft: #f0fdf4;
+    --radius: 12px;
+    --shadow: 0 1px 2px rgba(16, 24, 40, 0.04), 0 4px 12px rgba(16, 24, 40, 0.06);
+}
+
+* {
+    box-sizing: border-box;
+}
+
+[hidden] {
+    display: none !important;
+}
+
+body {
+    font-family: "Inter", Arial, Helvetica, sans-serif;
+    background-color: var(--bg);
+    color: var(--text);
+    margin: 0;
+    -webkit-font-smoothing: antialiased;
+}
+
+.app {
+    max-width: 420px;
+    margin: 0 auto;
+    padding: 2.5rem 1.5rem 4rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.2rem;
+}
+
+.link-loja {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-decoration: none;
+    align-self: flex-start;
+}
+
+.link-loja:hover {
+    color: var(--primary);
+}
+
+.card {
+    background-color: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 1.8rem;
+}
+
+.brand {
+    display: flex;
+    align-items: center;
+    gap: 0.9rem;
+    margin-bottom: 1.5rem;
+}
+
+.brand-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    background-color: var(--primary);
+    color: #fff;
+    flex-shrink: 0;
+}
+
+.brand-icon svg {
+    width: 24px;
+    height: 24px;
+}
+
+.brand h1 {
+    font-size: 1.2rem;
+    font-weight: 700;
+    margin: 0;
+    letter-spacing: -0.01em;
+}
+
+.brand p {
+    margin: 0.15rem 0 0;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+
+.abas {
+    display: flex;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.25rem;
+    margin-bottom: 1.3rem;
+    background-color: var(--bg);
+}
+
+.aba {
+    flex: 1;
+    padding: 0.55rem 0.6rem;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--text-muted);
+    font-family: inherit;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.aba.ativa {
+    background-color: var(--surface);
+    color: var(--primary);
+    box-shadow: var(--shadow);
+}
+
+.mensagem {
+    font-size: 0.85rem;
+    font-weight: 500;
+    padding: 0.65rem 0.85rem;
+    border-radius: 8px;
+    margin: 0 0 1.1rem;
+}
+
+.mensagem.erro {
+    background-color: var(--danger-soft);
+    color: var(--danger);
+}
+
+.mensagem.sucesso {
+    background-color: var(--success-soft);
+    color: var(--success);
+}
+
+.form-auth .campo {
+    margin-bottom: 1.1rem;
+}
+
+.form-auth label {
+    display: block;
+    margin-bottom: 0.4rem;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--text);
+}
+
+.form-auth input {
+    width: 100%;
+    padding: 0.6rem 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 0.95rem;
+    font-family: inherit;
+    color: var(--text);
+    background-color: var(--surface);
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.form-auth input::placeholder {
+    color: #a0a4ad;
+}
+
+.form-auth input:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px var(--primary-soft);
+}
+
+.ajuda {
+    margin: 0.4rem 0 0;
+    font-size: 0.78rem;
+    color: var(--text-muted);
+}
+
+.btn {
+    width: 100%;
+    padding: 0.7rem 1.1rem;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    transition: background-color 0.15s ease, transform 0.05s ease;
+    margin-top: 0.3rem;
+}
+
+.btn:active {
+    transform: translateY(1px);
+}
+
+.btn-primary {
+    background-color: var(--primary);
+    color: #fff;
+}
+
+.btn-primary:hover {
+    background-color: var(--primary-hover);
+}
