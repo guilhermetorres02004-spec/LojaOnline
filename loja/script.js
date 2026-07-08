@@ -4,15 +4,17 @@ const CHAVE_SESSAO = "loja-usuario-logado";
 const CHAVE_USUARIOS = "loja-usuarios";
 const LIMIAR_ESTOQUE_BAIXO = 5;
 
-const contaDeslogada = document.getElementById("conta-deslogada");
 const contaLogada = document.getElementById("conta-logada");
 const contaNome = document.getElementById("conta-nome");
 const btnSair = document.getElementById("btn-sair");
 const btnContaMenu = document.getElementById("btn-conta-menu");
 const contaMenu = document.getElementById("conta-menu");
+const btnAbrirCarrinho = document.getElementById("btn-abrir-carrinho");
+const linkEntrarMenu = document.getElementById("link-entrar-menu");
 const linkEstoqueMenu = document.getElementById("link-estoque-menu");
 const linkUsuariosMenu = document.getElementById("link-usuarios-menu");
 const linkPromocoesMenu = document.getElementById("link-promocoes-menu");
+const linkCadastrosMenu = document.getElementById("link-cadastros-menu");
 
 const carrosselSecao = document.querySelector(".carrossel");
 const carrosselTrilho = document.getElementById("carrossel-trilho");
@@ -55,8 +57,7 @@ function inicializarCarrossel() {
     if (totalSlidesCarrossel === 0) return;
 
     carrosselTrilho.innerHTML = produtosNoCarrossel.map((produto) => {
-        const promocao = produto.promocao || 0;
-        const selo = promocao > 0 ? `<span class="carrossel-promo">Promo ${promocao}% off</span>` : "";
+        const selo = promocaoAtiva(produto) ? `<span class="carrossel-promo">Promo ${produto.promocao}% off</span>` : "";
         return `
             <a class="carrossel-slide" href="produto.html?id=${produto.id}">
                 ${selo}
@@ -98,7 +99,6 @@ const vazioLoja = document.getElementById("vazio-loja");
 const vazioLojaTexto = document.getElementById("vazio-loja-texto");
 const buscaProduto = document.getElementById("busca-produto");
 
-const btnCarrinho = document.getElementById("btn-carrinho");
 const carrinhoContador = document.getElementById("carrinho-contador");
 const carrinhoDrawer = document.getElementById("carrinho-drawer");
 const overlay = document.getElementById("overlay");
@@ -140,6 +140,21 @@ function salvarCarrinho(carrinho) {
 
 function formatarPreco(valor) {
     return valor.toLocaleString("pt-br", { style: "currency", currency: "BRL" });
+}
+
+function promocaoAtiva(produto) {
+    const hoje = new Date().toISOString().split("T")[0];
+    return Boolean(produto.promocao > 0 && produto.promocaoValidade && produto.promocaoValidade >= hoje);
+}
+
+function precoEfetivo(produto) {
+    if (!promocaoAtiva(produto)) return produto.preco;
+    return produto.preco * (1 - produto.promocao / 100);
+}
+
+function precoHtml(produto) {
+    if (!promocaoAtiva(produto)) return formatarPreco(produto.preco);
+    return `<span class="preco-riscado">${formatarPreco(produto.preco)}</span> ${formatarPreco(precoEfetivo(produto))} <span class="promocao-tag">-${produto.promocao}%</span>`;
 }
 
 function mostrarToast(mensagem) {
@@ -200,7 +215,8 @@ function renderizarProdutos() {
             textoEstoque = `${disponivel} disponíveis (${jaNoCarrinho} no carrinho)`;
         }
 
-        const card = document.createElement("article");
+        const card = document.createElement("a");
+        card.href = `produto.html?id=${produto.id}`;
         card.className = `produto-card${esgotado ? " esgotado" : ""}`;
         const foto = produto.foto
             ? `<img src="${produto.foto}" class="produto-foto" alt="${produto.nome}">`
@@ -209,14 +225,8 @@ function renderizarProdutos() {
             ${foto}
             <span class="produto-marca">${produto.marca || "Marca não informada"}</span>
             <h3 class="produto-nome">${produto.nome}</h3>
-            <p class="produto-preco">${formatarPreco(produto.preco)}</p>
+            <p class="produto-preco">${precoHtml(produto)}</p>
             <p class="produto-estoque ${classeEstoque}">${textoEstoque}</p>
-            <div class="produto-acoes">
-                <input type="number" class="produto-qtd" min="1" max="${Math.max(disponivel, 1)}" value="1" ${esgotado ? "disabled" : ""}>
-                <button type="button" class="btn btn-primary btn-add" data-id="${produto.id}" ${esgotado ? "disabled" : ""}>
-                    ${esgotado ? "Esgotado" : "Adicionar"}
-                </button>
-            </div>
         `;
         gridProdutos.appendChild(card);
     });
@@ -246,7 +256,7 @@ function renderizarCarrinho() {
 
     carrinho.forEach((item) => {
         const produto = produtosPorId.get(item.produtoId);
-        const subtotal = produto.preco * item.quantidade;
+        const subtotal = precoEfetivo(produto) * item.quantidade;
         total += subtotal;
         const noLimite = item.quantidade >= produto.quantidade;
 
@@ -255,7 +265,7 @@ function renderizarCarrinho() {
         linha.innerHTML = `
             <div class="carrinho-item-info">
                 <span class="carrinho-item-nome">${produto.nome}</span>
-                <span class="carrinho-item-preco">${formatarPreco(produto.preco)} un.</span>
+                <span class="carrinho-item-preco">${formatarPreco(precoEfetivo(produto))} un.</span>
             </div>
             <div class="carrinho-item-qtd">
                 <button type="button" class="qtd-btn diminuir" data-id="${item.produtoId}">-</button>
@@ -313,25 +323,31 @@ function fecharMenuConta() {
 function renderizarConta() {
     const usuario = carregarSessao();
     const logado = Boolean(usuario);
-    contaDeslogada.hidden = logado;
-    contaLogada.hidden = !logado;
     fecharMenuConta();
 
-    if (logado) {
-        contaNome.textContent = `Olá, ${usuario.nome}`;
-    }
+    contaNome.textContent = logado ? `Olá, ${usuario.nome}` : "Minha conta";
+    linkEntrarMenu.hidden = logado;
+    btnSair.hidden = !logado;
 
     const ehAdmin = logado && usuario.papel === "admin";
-    linkEstoqueMenu.hidden = !ehAdmin;
+    const ehVendedor = logado && usuario.papel === "vendedor";
+    linkEstoqueMenu.hidden = !(ehAdmin || ehVendedor);
     linkUsuariosMenu.hidden = !ehAdmin;
     linkPromocoesMenu.hidden = !ehAdmin;
+    linkCadastrosMenu.hidden = !ehAdmin;
+
+    if (ehAdmin || ehVendedor) {
+        const dados = localStorage.getItem(CHAVE_SESSAO);
+        const parametro = encodeURIComponent(dados);
+        linkEstoqueMenu.href = `../estoque/index.html?sessao=${parametro}`;
+    }
 
     if (ehAdmin) {
         const dados = localStorage.getItem(CHAVE_SESSAO);
         const parametro = encodeURIComponent(dados);
-        linkEstoqueMenu.href = `../estoque/index.html?sessao=${parametro}`;
         linkUsuariosMenu.href = `../usuarios/index.html?sessao=${parametro}`;
         linkPromocoesMenu.href = `../promocoes/index.html?sessao=${parametro}`;
+        linkCadastrosMenu.href = `../cadastros/index.html?sessao=${parametro}`;
     }
 }
 
@@ -373,38 +389,6 @@ buscaProduto.addEventListener("input", () => {
     renderizarProdutos();
 });
 
-gridProdutos.addEventListener("click", (evento) => {
-    const botao = evento.target.closest(".btn-add");
-    if (!botao) return;
-
-    const id = botao.dataset.id;
-    const card = botao.closest(".produto-card");
-    const campoQtd = card.querySelector(".produto-qtd");
-    const quantidadeDesejada = Math.max(1, Number(campoQtd.value) || 1);
-
-    const produtos = carregarProdutos();
-    const produto = produtos.find((item) => item.id === id);
-    if (!produto) return;
-
-    const carrinho = carregarCarrinho();
-    const jaNoCarrinho = quantidadeNoCarrinho(id, carrinho);
-    const disponivel = produto.quantidade - jaNoCarrinho;
-    if (disponivel <= 0) return;
-
-    const quantidadeAdicionar = Math.min(quantidadeDesejada, disponivel);
-    const itemExistente = carrinho.find((item) => item.produtoId === id);
-    if (itemExistente) {
-        itemExistente.quantidade += quantidadeAdicionar;
-    } else {
-        carrinho.push({ produtoId: id, quantidade: quantidadeAdicionar });
-    }
-
-    salvarCarrinho(carrinho);
-    renderizarProdutos();
-    renderizarCarrinho();
-    mostrarToast(`${produto.nome} adicionado ao carrinho.`);
-});
-
 carrinhoItensEl.addEventListener("click", (evento) => {
     const id = evento.target.dataset.id;
     if (!id) return;
@@ -437,7 +421,10 @@ carrinhoItensEl.addEventListener("click", (evento) => {
     renderizarCarrinho();
 });
 
-btnCarrinho.addEventListener("click", abrirCarrinho);
+btnAbrirCarrinho.addEventListener("click", () => {
+    fecharMenuConta();
+    abrirCarrinho();
+});
 btnFecharCarrinho.addEventListener("click", fecharCarrinho);
 overlay.addEventListener("click", fecharCarrinho);
 
@@ -461,7 +448,7 @@ btnFinalizar.addEventListener("click", () => {
         const produto = produtos.find((produto) => produto.id === item.produtoId);
         if (!produto) return;
         const quantidadeComprada = Math.min(item.quantidade, produto.quantidade);
-        totalPedido += quantidadeComprada * produto.preco;
+        totalPedido += quantidadeComprada * precoEfetivo(produto);
         produto.quantidade -= quantidadeComprada;
     });
 

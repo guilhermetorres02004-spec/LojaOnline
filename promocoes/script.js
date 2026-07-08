@@ -31,6 +31,7 @@ document.getElementById("acesso-negado").hidden = autorizado;
 if (autorizado) {
     const sessaoAtual = localStorage.getItem(CHAVE_SESSAO);
     const parametro = encodeURIComponent(sessaoAtual);
+    document.getElementById("link-cadastros").href = `../cadastros/index.html?sessao=${parametro}`;
     document.getElementById("link-estoque").href = `../estoque/index.html?sessao=${parametro}`;
     document.getElementById("link-usuarios").href = `../usuarios/index.html?sessao=${parametro}`;
 }
@@ -41,6 +42,14 @@ const listaPromocoes = document.getElementById("lista-promocoes");
 const vazioPromocoes = document.getElementById("vazio-promocoes");
 const vazioPromocoesTexto = document.getElementById("vazio-promocoes-texto");
 const toast = document.getElementById("toast");
+
+const btnAbrirFormPromocao = document.getElementById("btn-abrir-form-promocao");
+const btnCancelarPromocao = document.getElementById("btn-cancelar-promocao");
+const formPromocao = document.getElementById("form-promocao");
+const campoPromoProduto = document.getElementById("promo-produto");
+const campoPromoPercentual = document.getElementById("promo-percentual");
+const campoPromoValidade = document.getElementById("promo-validade");
+const mensagemPromocao = document.getElementById("mensagem-promocao");
 
 let termoBusca = "";
 let toastTimeout = null;
@@ -58,6 +67,19 @@ function formatarPreco(valor) {
     return valor.toLocaleString("pt-br", { style: "currency", currency: "BRL" });
 }
 
+function formatarData(dataIso) {
+    const [ano, mes, dia] = dataIso.split("-");
+    return `${dia}/${mes}/${ano}`;
+}
+
+function hojeIso() {
+    return new Date().toISOString().split("T")[0];
+}
+
+function promocaoAtiva(produto) {
+    return Boolean(produto.promocao > 0 && produto.promocaoValidade && produto.promocaoValidade >= hojeIso());
+}
+
 function mostrarToast(mensagem) {
     toast.textContent = mensagem;
     toast.classList.add("visivel");
@@ -67,12 +89,38 @@ function mostrarToast(mensagem) {
     }, 2600);
 }
 
-function precoComDescontoHtml(preco, promocao) {
-    if (!promocao || promocao <= 0) {
-        return formatarPreco(preco);
+function mostrarMensagemPromocao(texto, tipo) {
+    mensagemPromocao.textContent = texto;
+    mensagemPromocao.className = `mensagem ${tipo}`;
+    mensagemPromocao.hidden = false;
+}
+
+function precoComDescontoHtml(produto) {
+    if (!promocaoAtiva(produto)) {
+        return formatarPreco(produto.preco);
     }
-    const precoFinal = preco * (1 - promocao / 100);
-    return `<span class="preco-riscado">${formatarPreco(preco)}</span><span class="preco-promocional">${formatarPreco(precoFinal)}</span>`;
+    const precoFinal = produto.preco * (1 - produto.promocao / 100);
+    return `<span class="preco-riscado">${formatarPreco(produto.preco)}</span><span class="preco-promocional">${formatarPreco(precoFinal)}</span>`;
+}
+
+function abrirFormPromocao() {
+    const produtos = carregarProdutos();
+    campoPromoProduto.innerHTML = `<option value="">Selecione um produto</option>` + produtos.map((produto) =>
+        `<option value="${produto.id}">${produto.nome}</option>`
+    ).join("");
+    campoPromoValidade.min = hojeIso();
+
+    formPromocao.reset();
+    mensagemPromocao.hidden = true;
+    formPromocao.hidden = false;
+    btnAbrirFormPromocao.hidden = true;
+}
+
+function fecharFormPromocao() {
+    formPromocao.reset();
+    formPromocao.hidden = true;
+    mensagemPromocao.hidden = true;
+    btnAbrirFormPromocao.hidden = false;
 }
 
 function renderizarPromocoes() {
@@ -101,20 +149,18 @@ function renderizarPromocoes() {
     vazioPromocoes.hidden = true;
 
     filtrados.forEach((produto) => {
+        const ativa = promocaoAtiva(produto);
+        const expirada = Boolean(produto.promocao > 0 && produto.promocaoValidade && !ativa);
         const linha = document.createElement("tr");
-        linha.dataset.id = produto.id;
         linha.innerHTML = `
             <td class="nome-produto">${produto.nome}</td>
             <td>${produto.marca || "—"}</td>
             <td><span class="carrossel-badge ${produto.noCarrossel ? "sim" : ""}">${produto.noCarrossel ? "Sim" : "Não"}</span></td>
             <td>${formatarPreco(produto.preco)}</td>
-            <td>
-                <div class="promocao-campo">
-                    <input type="number" class="promocao-input" data-id="${produto.id}" min="0" max="${PROMOCAO_MAXIMA}" step="1" value="${produto.promocao || 0}">
-                    <span>%</span>
-                </div>
-            </td>
-            <td class="preco-final" data-id="${produto.id}">${precoComDescontoHtml(produto.preco, produto.promocao)}</td>
+            <td>${ativa ? `${produto.promocao}%` : "—"}</td>
+            <td class="${expirada ? "validade-expirada" : ""}">${produto.promocaoValidade ? formatarData(produto.promocaoValidade) + (expirada ? " (expirada)" : "") : "—"}</td>
+            <td>${precoComDescontoHtml(produto)}</td>
+            <td>${produto.promocao > 0 ? `<button type="button" class="acao-btn remover-promocao" data-id="${produto.id}">Remover</button>` : ""}</td>
         `;
         listaPromocoes.appendChild(linha);
     });
@@ -126,37 +172,67 @@ if (autorizado) {
         renderizarPromocoes();
     });
 
-    listaPromocoes.addEventListener("input", (evento) => {
-        if (!evento.target.classList.contains("promocao-input")) return;
+    btnAbrirFormPromocao.addEventListener("click", abrirFormPromocao);
+    btnCancelarPromocao.addEventListener("click", fecharFormPromocao);
 
-        const id = evento.target.dataset.id;
+    formPromocao.addEventListener("submit", (evento) => {
+        evento.preventDefault();
+        mensagemPromocao.hidden = true;
+
+        const produtoId = campoPromoProduto.value;
+        const percentual = Number(campoPromoPercentual.value);
+        const validade = campoPromoValidade.value;
+
+        if (!produtoId) {
+            mostrarMensagemPromocao("Selecione um produto.", "erro");
+            return;
+        }
+
+        if (!percentual || percentual < 1 || percentual > PROMOCAO_MAXIMA) {
+            mostrarMensagemPromocao(`Informe um desconto entre 1% e ${PROMOCAO_MAXIMA}%.`, "erro");
+            return;
+        }
+
+        if (!validade) {
+            mostrarMensagemPromocao("Escolha a data em que a promoção termina.", "erro");
+            return;
+        }
+
+        if (validade < hojeIso()) {
+            mostrarMensagemPromocao("A data de término não pode ser no passado.", "erro");
+            return;
+        }
+
         const produtos = carregarProdutos();
-        const produto = produtos.find((item) => item.id === id);
-        if (!produto) return;
+        const produto = produtos.find((item) => item.id === produtoId);
+        if (!produto) {
+            mostrarMensagemPromocao("Produto não encontrado.", "erro");
+            return;
+        }
 
-        const valor = Math.min(PROMOCAO_MAXIMA, Math.max(0, Number(evento.target.value) || 0));
-        const linha = evento.target.closest("tr");
-        linha.querySelector(".preco-final").innerHTML = precoComDescontoHtml(produto.preco, valor);
+        produto.promocao = percentual;
+        produto.promocaoValidade = validade;
+        salvarProdutos(produtos);
+        renderizarPromocoes();
+
+        mostrarMensagemPromocao(`Promoção aplicada em ${produto.nome}!`, "sucesso");
+        setTimeout(fecharFormPromocao, 1200);
     });
 
-    listaPromocoes.addEventListener("change", (evento) => {
-        if (!evento.target.classList.contains("promocao-input")) return;
+    listaPromocoes.addEventListener("click", (evento) => {
+        const botao = evento.target.closest(".remover-promocao");
+        if (!botao) return;
 
-        const id = evento.target.dataset.id;
+        const id = botao.dataset.id;
         const produtos = carregarProdutos();
         const produto = produtos.find((item) => item.id === id);
         if (!produto) return;
 
-        const valor = Math.min(PROMOCAO_MAXIMA, Math.max(0, Number(evento.target.value) || 0));
-        evento.target.value = valor;
-        produto.promocao = valor;
+        produto.promocao = 0;
+        produto.promocaoValidade = "";
         salvarProdutos(produtos);
-
-        mostrarToast(
-            valor > 0
-                ? `${produto.nome} agora está com ${valor}% de desconto.`
-                : `Promoção de ${produto.nome} removida.`
-        );
+        renderizarPromocoes();
+        mostrarToast(`Promoção de ${produto.nome} removida.`);
     });
 
     renderizarPromocoes();

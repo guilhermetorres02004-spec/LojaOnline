@@ -27,6 +27,7 @@ const autorizado = usuarioEhAdmin();
 document.getElementById("app-usuarios").hidden = !autorizado;
 document.getElementById("acesso-negado").hidden = autorizado;
 
+const linkCadastros = document.getElementById("link-cadastros");
 const linkEstoque = document.getElementById("link-estoque");
 const linkPromocoes = document.getElementById("link-promocoes");
 const linkLoja = document.getElementById("link-loja");
@@ -34,6 +35,7 @@ const linkLoja = document.getElementById("link-loja");
 if (autorizado) {
     const sessaoAtual = localStorage.getItem(CHAVE_SESSAO);
     const parametro = encodeURIComponent(sessaoAtual);
+    linkCadastros.href = `../cadastros/index.html?sessao=${parametro}`;
     linkEstoque.href = `../estoque/index.html?sessao=${parametro}`;
     linkPromocoes.href = `../promocoes/index.html?sessao=${parametro}`;
     linkLoja.href = `../loja/index.html?sessao=${parametro}`;
@@ -98,6 +100,23 @@ function formatarCpf(cpf) {
     return cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");
 }
 
+function formatarCnpj(cnpj) {
+    if (!cnpj) return "—";
+    return cnpj.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, "$1.$2.$3/$4-$5");
+}
+
+function documentoUsuario(usuario) {
+    if (usuario.cpf) return formatarCpf(usuario.cpf);
+    if (usuario.cnpj) return formatarCnpj(usuario.cnpj);
+    return "—";
+}
+
+function rotuloPapel(papel) {
+    if (papel === "admin") return "Admin";
+    if (papel === "vendedor") return "Vendedor";
+    return "Cliente";
+}
+
 function ordenarLista(usuarios) {
     const copia = [...usuarios];
     if (ordenacaoAtual === "compras") {
@@ -146,20 +165,27 @@ function renderizarUsuarios() {
         linha.innerHTML = `
             <td class="nome-usuario">${usuario.nome}</td>
             <td>${usuario.email}</td>
-            <td>${formatarCpf(usuario.cpf)}</td>
-            <td><span class="papel-badge ${usuario.papel === "admin" ? "admin" : ""}">${usuario.papel === "admin" ? "Admin" : "Cliente"}</span></td>
+            <td>${documentoUsuario(usuario)}</td>
+            <td><span class="papel-badge ${usuario.papel}">${rotuloPapel(usuario.papel)}</span></td>
             <td class="${compras > 0 ? "compras-destaque" : ""}">${compras}</td>
             <td>${formatarPreco(usuario.totalGasto || 0)}</td>
+            <td><button type="button" class="acao-btn editar-usuario" data-id="${usuario.id}">Editar</button></td>
         `;
         listaUsuarios.appendChild(linha);
     });
 }
 
 const formCriarUsuario = document.getElementById("form-criar-usuario");
+const campoUsuarioId = document.getElementById("usuario-id");
 const campoNovoCpf = document.getElementById("novo-cpf");
+const campoNovoSenha = document.getElementById("novo-senha");
+const rotuloNovaSenha = document.getElementById("novo-senha-label");
+const campoNovoPapel = document.getElementById("novo-papel");
 const mensagemCriarUsuario = document.getElementById("mensagem-criar-usuario");
 const btnAbrirFormUsuario = document.getElementById("btn-abrir-form-usuario");
 const btnCancelarFormUsuario = document.getElementById("btn-cancelar-form-usuario");
+const formUsuarioTitulo = document.getElementById("form-usuario-titulo");
+const btnSalvarUsuario = document.getElementById("btn-salvar-usuario");
 
 function mostrarMensagemCriarUsuario(texto, tipo) {
     mensagemCriarUsuario.textContent = texto;
@@ -169,13 +195,52 @@ function mostrarMensagemCriarUsuario(texto, tipo) {
 
 function abrirFormUsuario() {
     formCriarUsuario.reset();
+    campoUsuarioId.value = "";
+    campoNovoCpf.disabled = false;
+    campoNovoSenha.required = true;
+    rotuloNovaSenha.textContent = "Senha";
+    formUsuarioTitulo.textContent = "Novo usuário";
+    btnSalvarUsuario.textContent = "Criar usuário";
     formCriarUsuario.hidden = false;
     btnAbrirFormUsuario.hidden = true;
-    setTimeout(() => formCriarUsuario.reset(), 60);
+    setTimeout(() => {
+        if (!campoUsuarioId.value) formCriarUsuario.reset();
+    }, 60);
+}
+
+function abrirFormEdicaoUsuario(usuario) {
+    formCriarUsuario.reset();
+    campoUsuarioId.value = usuario.id;
+    document.getElementById("novo-nome").value = usuario.nome;
+    document.getElementById("novo-email").value = usuario.email;
+
+    if (usuario.cnpj) {
+        campoNovoCpf.value = formatarCnpj(usuario.cnpj);
+        campoNovoCpf.disabled = true;
+    } else {
+        campoNovoCpf.value = mascararCpf(usuario.cpf || "");
+        campoNovoCpf.disabled = false;
+    }
+
+    campoNovoPapel.value = usuario.papel || "cliente";
+    campoNovoSenha.value = "";
+    campoNovoSenha.required = false;
+    rotuloNovaSenha.textContent = "Senha (deixe em branco para manter a atual)";
+    formUsuarioTitulo.textContent = "Editar usuário";
+    btnSalvarUsuario.textContent = "Salvar alterações";
+    mensagemCriarUsuario.hidden = true;
+    formCriarUsuario.hidden = false;
+    btnAbrirFormUsuario.hidden = true;
 }
 
 function fecharFormUsuario() {
     formCriarUsuario.reset();
+    campoUsuarioId.value = "";
+    campoNovoCpf.disabled = false;
+    campoNovoSenha.required = true;
+    rotuloNovaSenha.textContent = "Senha";
+    formUsuarioTitulo.textContent = "Novo usuário";
+    btnSalvarUsuario.textContent = "Criar usuário";
     formCriarUsuario.hidden = true;
     mensagemCriarUsuario.hidden = true;
     btnAbrirFormUsuario.hidden = false;
@@ -199,56 +264,89 @@ if (autorizado) {
         campoNovoCpf.value = mascararCpf(campoNovoCpf.value);
     });
 
+    listaUsuarios.addEventListener("click", (evento) => {
+        const botao = evento.target.closest(".editar-usuario");
+        if (!botao) return;
+
+        const usuarios = carregarUsuarios();
+        const usuario = usuarios.find((item) => item.id === botao.dataset.id);
+        if (!usuario) return;
+
+        abrirFormEdicaoUsuario(usuario);
+    });
+
     formCriarUsuario.addEventListener("submit", (evento) => {
         evento.preventDefault();
         mensagemCriarUsuario.hidden = true;
 
+        const id = campoUsuarioId.value;
+        const editando = Boolean(id);
+
+        const usuarios = carregarUsuarios();
+        const usuarioExistente = editando ? usuarios.find((item) => item.id === id) : null;
+        const ehContaEmpresa = Boolean(usuarioExistente && usuarioExistente.cnpj);
+
         const nome = document.getElementById("novo-nome").value.trim();
         const email = document.getElementById("novo-email").value.trim().toLowerCase();
         const cpf = campoNovoCpf.value.replace(/\D/g, "");
-        const senha = document.getElementById("novo-senha").value;
-        const papel = document.getElementById("novo-papel").value;
+        const senha = campoNovoSenha.value;
+        const papel = campoNovoPapel.value;
 
-        if (!nome || !email || !cpf || !senha) {
+        if (!nome || !email || (!ehContaEmpresa && !cpf) || (!editando && !senha)) {
             mostrarMensagemCriarUsuario("Preencha todos os campos.", "erro");
             return;
         }
 
-        if (!cpfValido(cpf)) {
+        if (!ehContaEmpresa && !cpfValido(cpf)) {
             mostrarMensagemCriarUsuario("Informe um CPF válido.", "erro");
             return;
         }
 
-        if (senha.length < 4) {
+        if (senha && senha.length < 4) {
             mostrarMensagemCriarUsuario("A senha deve ter pelo menos 4 caracteres.", "erro");
             return;
         }
 
-        const usuarios = carregarUsuarios();
-
-        if (usuarios.some((usuario) => usuario.email.toLowerCase() === email)) {
+        if (usuarios.some((usuario) => usuario.id !== id && usuario.email.toLowerCase() === email)) {
             mostrarMensagemCriarUsuario("Já existe um usuário com esse e-mail.", "erro");
             return;
         }
 
-        if (usuarios.some((usuario) => usuario.cpf === cpf)) {
+        if (!ehContaEmpresa && usuarios.some((usuario) => usuario.id !== id && usuario.cpf === cpf)) {
             mostrarMensagemCriarUsuario("Já existe um usuário com esse CPF.", "erro");
             return;
         }
 
-        usuarios.push({
-            id: Date.now().toString(),
-            nome,
-            email,
-            cpf,
-            senha,
-            papel,
-            comprasRealizadas: 0,
-            totalGasto: 0,
-        });
+        if (editando) {
+            const usuario = usuarioExistente;
+            if (!usuario) {
+                mostrarMensagemCriarUsuario("Usuário não encontrado.", "erro");
+                return;
+            }
+            usuario.nome = nome;
+            usuario.email = email;
+            if (!ehContaEmpresa) usuario.cpf = cpf;
+            usuario.papel = papel;
+            if (senha) usuario.senha = senha;
 
-        salvarUsuarios(usuarios);
-        mostrarMensagemCriarUsuario("Usuário criado com sucesso!", "sucesso");
+            salvarUsuarios(usuarios);
+            mostrarMensagemCriarUsuario("Usuário atualizado com sucesso!", "sucesso");
+        } else {
+            usuarios.push({
+                id: Date.now().toString(),
+                nome,
+                email,
+                cpf,
+                senha,
+                papel,
+                comprasRealizadas: 0,
+                totalGasto: 0,
+            });
+
+            salvarUsuarios(usuarios);
+            mostrarMensagemCriarUsuario("Usuário criado com sucesso!", "sucesso");
+        }
+
         renderizarUsuarios();
         setTimeout(fecharFormUsuario, 1200);
     });

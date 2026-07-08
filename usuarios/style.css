@@ -202,6 +202,12 @@ body {
     box-shadow: 0 0 0 3px var(--primary-soft);
 }
 
+.campo input:disabled {
+    background-color: var(--bg);
+    color: var(--text-muted);
+    cursor: not-allowed;
+}
+
 .mensagem {
     font-size: 0.85rem;
     font-weight: 500;
@@ -372,9 +378,32 @@ tbody tr:hover {
     color: var(--primary);
 }
 
+.papel-badge.vendedor {
+    background-color: #fef3c7;
+    color: #b45309;
+}
+
 .compras-destaque {
     font-weight: 700;
     color: var(--success);
+}
+
+.acao-btn {
+    padding: 0.4rem 0.65rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    background-color: var(--surface);
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.acao-btn:hover {
+    border-color: var(--primary);
+    color: var(--primary);
+    background-color: var(--primary-soft);
 }
 
 /* Empty state */

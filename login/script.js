@@ -3,10 +3,14 @@ const CHAVE_SESSAO = "loja-usuario-logado";
 
 const abaEntrar = document.getElementById("aba-entrar");
 const abaCadastrar = document.getElementById("aba-cadastrar");
+const abaEmpresa = document.getElementById("aba-empresa");
 const formEntrar = document.getElementById("form-entrar");
 const formCadastrar = document.getElementById("form-cadastrar");
+const formEmpresa = document.getElementById("form-empresa");
 const mensagem = document.getElementById("mensagem");
 const campoCpf = document.getElementById("cadastro-cpf");
+const campoCnpj = document.getElementById("empresa-cnpj");
+const campoTelefone = document.getElementById("empresa-telefone");
 
 function carregarUsuarios() {
     const dados = localStorage.getItem(CHAVE_USUARIOS);
@@ -93,6 +97,62 @@ campoCpf.addEventListener("input", () => {
     campoCpf.value = mascararCpf(campoCpf.value);
 });
 
+function mascararCnpj(valor) {
+    return valor
+        .replace(/\D/g, "")
+        .slice(0, 14)
+        .replace(/(\d{2})(\d)/, "$1.$2")
+        .replace(/(\d{3})(\d)/, "$1.$2")
+        .replace(/(\d{3})(\d)/, "$1/$2")
+        .replace(/(\d{4})(\d{1,2})$/, "$1-$2");
+}
+
+function cnpjValido(cnpj) {
+    cnpj = cnpj.replace(/\D/g, "");
+    if (cnpj.length !== 14 || /^(\d)\1{13}$/.test(cnpj)) return false;
+
+    const calcularDigito = (base, pesos) => {
+        let soma = 0;
+        for (let i = 0; i < base.length; i++) soma += Number(base[i]) * pesos[i];
+        const resto = soma % 11;
+        return resto < 2 ? 0 : 11 - resto;
+    };
+
+    const pesos1 = [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
+    const digito1 = calcularDigito(cnpj.slice(0, 12), pesos1);
+    if (digito1 !== Number(cnpj[12])) return false;
+
+    const pesos2 = [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
+    const digito2 = calcularDigito(cnpj.slice(0, 13), pesos2);
+    if (digito2 !== Number(cnpj[13])) return false;
+
+    return true;
+}
+
+function mascararTelefone(valor) {
+    const digitos = valor.replace(/\D/g, "").slice(0, 11);
+    if (digitos.length > 10) {
+        return digitos.replace(/(\d{2})(\d{5})(\d{0,4})/, (m, ddd, parte1, parte2) =>
+            parte2 ? `(${ddd}) ${parte1}-${parte2}` : `(${ddd}) ${parte1}`
+        );
+    }
+    return digitos.replace(/(\d{2})(\d{0,4})(\d{0,4})/, (m, ddd, parte1, parte2) => {
+        let resultado = ddd ? `(${ddd}` : "";
+        if (ddd.length === 2) resultado += ") ";
+        resultado += parte1;
+        if (parte2) resultado += `-${parte2}`;
+        return resultado;
+    });
+}
+
+campoCnpj.addEventListener("input", () => {
+    campoCnpj.value = mascararCnpj(campoCnpj.value);
+});
+
+campoTelefone.addEventListener("input", () => {
+    campoTelefone.value = mascararTelefone(campoTelefone.value);
+});
+
 function mostrarMensagem(texto, tipo) {
     mensagem.textContent = texto;
     mensagem.className = `mensagem ${tipo}`;
@@ -105,15 +165,17 @@ function esconderMensagem() {
 
 function mostrarAba(aba) {
     esconderMensagem();
-    const ehEntrar = aba === "entrar";
-    abaEntrar.classList.toggle("ativa", ehEntrar);
-    abaCadastrar.classList.toggle("ativa", !ehEntrar);
-    formEntrar.hidden = !ehEntrar;
-    formCadastrar.hidden = ehEntrar;
+    abaEntrar.classList.toggle("ativa", aba === "entrar");
+    abaCadastrar.classList.toggle("ativa", aba === "cadastrar");
+    abaEmpresa.classList.toggle("ativa", aba === "empresa");
+    formEntrar.hidden = aba !== "entrar";
+    formCadastrar.hidden = aba !== "cadastrar";
+    formEmpresa.hidden = aba !== "empresa";
 }
 
 abaEntrar.addEventListener("click", () => mostrarAba("entrar"));
 abaCadastrar.addEventListener("click", () => mostrarAba("cadastrar"));
+abaEmpresa.addEventListener("click", () => mostrarAba("empresa"));
 
 formEntrar.addEventListener("submit", (evento) => {
     evento.preventDefault();
@@ -127,6 +189,11 @@ formEntrar.addEventListener("submit", (evento) => {
 
     if (!usuario) {
         mostrarMensagem("E-mail ou senha inválidos.", "erro");
+        return;
+    }
+
+    if (usuario.statusCadastro === "pendente") {
+        mostrarMensagem("Seu cadastro ainda está em análise. Aguarde a aprovação do administrador.", "erro");
         return;
     }
 
@@ -195,4 +262,72 @@ formCadastrar.addEventListener("submit", (evento) => {
 
     mostrarMensagem("Conta criada com sucesso! Redirecionando...", "sucesso");
     setTimeout(() => irParaLoja(sessao), 600);
+});
+
+formEmpresa.addEventListener("submit", (evento) => {
+    evento.preventDefault();
+    esconderMensagem();
+
+    const nomeEmpresa = document.getElementById("empresa-nome").value.trim();
+    const email = document.getElementById("empresa-email").value.trim().toLowerCase();
+    const cnpj = campoCnpj.value.replace(/\D/g, "");
+    const telefone = campoTelefone.value.replace(/\D/g, "");
+    const senha = document.getElementById("empresa-senha").value;
+    const confirmar = document.getElementById("empresa-confirmar").value;
+
+    if (!nomeEmpresa || !email || !cnpj || !telefone || !senha) {
+        mostrarMensagem("Preencha todos os campos.", "erro");
+        return;
+    }
+
+    if (!cnpjValido(cnpj)) {
+        mostrarMensagem("Informe um CNPJ válido.", "erro");
+        return;
+    }
+
+    if (telefone.length < 10) {
+        mostrarMensagem("Informe um número de contato válido.", "erro");
+        return;
+    }
+
+    if (senha.length < 4) {
+        mostrarMensagem("A senha deve ter pelo menos 4 caracteres.", "erro");
+        return;
+    }
+
+    if (senha !== confirmar) {
+        mostrarMensagem("As senhas não coincidem.", "erro");
+        return;
+    }
+
+    const usuarios = carregarUsuarios();
+
+    if (usuarios.some((usuario) => usuario.email.toLowerCase() === email)) {
+        mostrarMensagem("Já existe um cadastro com esse e-mail.", "erro");
+        return;
+    }
+
+    if (usuarios.some((usuario) => usuario.cnpj === cnpj)) {
+        mostrarMensagem("Já existe um cadastro com esse CNPJ.", "erro");
+        return;
+    }
+
+    usuarios.push({
+        id: Date.now().toString(),
+        nome: nomeEmpresa,
+        email,
+        cnpj,
+        telefone,
+        senha,
+        papel: "vendedor",
+        statusCadastro: "pendente",
+        dataCadastro: new Date().toISOString(),
+        comprasRealizadas: 0,
+        totalGasto: 0,
+    });
+
+    salvarUsuarios(usuarios);
+    formEmpresa.reset();
+    mostrarMensagem("Cadastro enviado! Você poderá entrar assim que o administrador aprovar.", "sucesso");
+    setTimeout(() => mostrarAba("entrar"), 2200);
 });

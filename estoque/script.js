@@ -1,6 +1,7 @@
 const CHAVE_ARMAZENAMENTO = "estoque-produtos";
 const CHAVE_SESSAO = "loja-usuario-logado";
 const LIMIAR_ESTOQUE_BAIXO = 5;
+const LIMITE_PRODUTOS_VENDEDOR_DIA = 30;
 
 const iconeFotoVazia = `
     <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -21,26 +22,40 @@ function importarSessaoDaUrl() {
     window.history.replaceState({}, "", window.location.pathname + (query ? `?${query}` : ""));
 }
 
-function usuarioEhAdmin() {
+function carregarSessaoAtual() {
     const dados = localStorage.getItem(CHAVE_SESSAO);
-    if (!dados) return false;
+    if (!dados) return null;
     try {
-        return JSON.parse(dados).papel === "admin";
+        return JSON.parse(dados);
     } catch (erro) {
-        return false;
+        return null;
     }
 }
 
 importarSessaoDaUrl();
-const autorizado = usuarioEhAdmin();
+const sessaoUsuario = carregarSessaoAtual();
+const ehAdmin = Boolean(sessaoUsuario && sessaoUsuario.papel === "admin");
+const ehVendedor = Boolean(sessaoUsuario && sessaoUsuario.papel === "vendedor");
+const autorizado = ehAdmin || ehVendedor;
+
 document.getElementById("app-estoque").hidden = !autorizado;
 document.getElementById("acesso-negado").hidden = autorizado;
 
+const linkCadastros = document.getElementById("link-cadastros");
+const linkUsuarios = document.getElementById("link-usuarios");
+const linkPromocoes = document.getElementById("link-promocoes");
+
 if (autorizado) {
-    const sessaoAtual = localStorage.getItem(CHAVE_SESSAO);
-    const parametro = encodeURIComponent(sessaoAtual);
-    document.getElementById("link-usuarios").href = `../usuarios/index.html?sessao=${parametro}`;
-    document.getElementById("link-promocoes").href = `../promocoes/index.html?sessao=${parametro}`;
+    linkCadastros.hidden = !ehAdmin;
+    linkUsuarios.hidden = !ehAdmin;
+    linkPromocoes.hidden = !ehAdmin;
+
+    if (ehAdmin) {
+        const parametro = encodeURIComponent(localStorage.getItem(CHAVE_SESSAO));
+        linkCadastros.href = `../cadastros/index.html?sessao=${parametro}`;
+        linkUsuarios.href = `../usuarios/index.html?sessao=${parametro}`;
+        linkPromocoes.href = `../promocoes/index.html?sessao=${parametro}`;
+    }
 }
 
 const form = document.getElementById("form-produto");
@@ -55,6 +70,9 @@ const campoQuantidade = document.getElementById("quantidade");
 const campoPreco = document.getElementById("preco");
 const campoDescricao = document.getElementById("descricao");
 const campoNoCarrossel = document.getElementById("no-carrossel");
+const campoCarrossel = document.getElementById("campo-carrossel");
+const mensagemProduto = document.getElementById("mensagem-produto");
+const limiteVendedorTexto = document.getElementById("limite-vendedor");
 const btnSalvar = document.getElementById("btn-salvar");
 const btnCancelar = document.getElementById("btn-cancelar");
 const listaProdutos = document.getElementById("lista-produtos");
@@ -95,6 +113,35 @@ function salvarProdutos(produtos) {
 
 function formatarPreco(valor) {
     return valor.toLocaleString("pt-br", { style: "currency", currency: "BRL" });
+}
+
+function hojeIso() {
+    return new Date().toISOString().split("T")[0];
+}
+
+function contarProdutosHojePorUsuario(usuarioId) {
+    const hoje = hojeIso();
+    return carregarProdutos().filter((produto) => produto.criadoPorId === usuarioId && produto.criadoEm === hoje).length;
+}
+
+function mostrarMensagemProduto(texto, tipo) {
+    mensagemProduto.textContent = texto;
+    mensagemProduto.className = `mensagem ${tipo}`;
+    mensagemProduto.hidden = false;
+}
+
+function atualizarLimiteVendedor() {
+    if (!ehVendedor || !sessaoUsuario) {
+        limiteVendedorTexto.hidden = true;
+        return;
+    }
+    const total = contarProdutosHojePorUsuario(sessaoUsuario.id);
+    limiteVendedorTexto.hidden = false;
+    limiteVendedorTexto.textContent = `Você já anunciou ${total} de ${LIMITE_PRODUTOS_VENDEDOR_DIA} produtos hoje.`;
+}
+
+if (ehVendedor) {
+    campoCarrossel.hidden = true;
 }
 
 function atualizarBotaoRemoverSelecionados() {
@@ -191,6 +238,7 @@ function limparFormulario() {
     fotoAtual = "";
     fotoPreview.hidden = true;
     fotoPreview.src = "";
+    mensagemProduto.hidden = true;
     formTitulo.textContent = "Novo produto";
     btnSalvar.textContent = "Cadastrar";
     btnCancelar.hidden = true;
@@ -198,6 +246,7 @@ function limparFormulario() {
 
 form.addEventListener("submit", (evento) => {
     evento.preventDefault();
+    mensagemProduto.hidden = true;
 
     const produtos = carregarProdutos();
     const id = campoId.value;
@@ -207,10 +256,22 @@ form.addEventListener("submit", (evento) => {
     const quantidade = Number(campoQuantidade.value);
     const preco = Number(campoPreco.value);
     const descricao = campoDescricao.value.trim();
-    const noCarrossel = campoNoCarrossel.checked;
+    const noCarrossel = ehVendedor ? false : campoNoCarrossel.checked;
 
     if (!nome || !tipo || !marca || quantidade < 0 || preco < 0) {
+        mostrarMensagemProduto("Preencha todos os campos corretamente.", "erro");
         return;
+    }
+
+    if (!id && ehVendedor) {
+        const totalHoje = contarProdutosHojePorUsuario(sessaoUsuario.id);
+        if (totalHoje >= LIMITE_PRODUTOS_VENDEDOR_DIA) {
+            mostrarMensagemProduto(
+                `Você atingiu o limite de ${LIMITE_PRODUTOS_VENDEDOR_DIA} produtos por dia. Tente novamente amanhã.`,
+                "erro"
+            );
+            return;
+        }
     }
 
     if (id) {
@@ -234,11 +295,14 @@ form.addEventListener("submit", (evento) => {
             foto: fotoAtual,
             descricao,
             noCarrossel,
+            criadoPorId: sessaoUsuario ? sessaoUsuario.id : null,
+            criadoEm: hojeIso(),
         });
     }
 
     salvarProdutos(produtos);
     renderizarProdutos();
+    atualizarLimiteVendedor();
     limparFormulario();
 });
 
@@ -337,4 +401,5 @@ btnCancelar.addEventListener("click", limparFormulario);
 
 if (autorizado) {
     renderizarProdutos();
+    atualizarLimiteVendedor();
 }

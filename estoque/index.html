@@ -26,6 +26,7 @@
                 </div>
             </div>
             <nav class="topbar-nav">
+                <a href="../cadastros/index.html" id="link-cadastros" class="link-loja">Cadastros</a>
                 <a href="../usuarios/index.html" id="link-usuarios" class="link-loja">Usuários</a>
                 <a href="../promocoes/index.html" id="link-promocoes" class="link-loja">Promoções</a>
                 <a href="../loja/index.html" class="link-loja">Ver loja</a>
@@ -94,13 +95,16 @@
                             <textarea id="descricao" rows="3" placeholder="Detalhes, especificações, o que vem na caixa..."></textarea>
                         </div>
 
-                        <div class="campo campo-checkbox">
+                        <div class="campo campo-checkbox" id="campo-carrossel">
                             <label class="checkbox-label">
                                 <input type="checkbox" id="no-carrossel">
                                 Adicionar ao carrossel
                             </label>
                             <p class="ajuda">Se marcado, a foto do produto (acima) aparece no carrossel da loja e leva direto para a página deste produto.</p>
                         </div>
+
+                        <p class="ajuda" id="limite-vendedor" hidden></p>
+                        <p class="mensagem" id="mensagem-produto" hidden></p>
 
                         <div class="botoes">
                             <button type="submit" id="btn-salvar" class="btn btn-primary">Cadastrar</button>
@@ -156,7 +160,7 @@
     <div class="acesso-negado" id="acesso-negado" hidden>
         <section class="card">
             <h2>Acesso restrito</h2>
-            <p>Esta área é exclusiva para administradores.</p>
+            <p>Esta área é exclusiva para administradores e vendedores.</p>
             <a href="../loja/index.html" class="btn btn-primary">Voltar para a loja</a>
         </section>
     </div>

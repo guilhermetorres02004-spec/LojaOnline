@@ -107,21 +107,6 @@ body {
     border-color: var(--primary);
 }
 
-/* Layout */
-
-.grid {
-    display: grid;
-    grid-template-columns: 320px 1fr;
-    gap: 1.5rem;
-    align-items: start;
-}
-
-@media (max-width: 900px) {
-    .grid {
-        grid-template-columns: 1fr;
-    }
-}
-
 /* Card / table */
 
 .card {
@@ -130,157 +115,6 @@ body {
     border-radius: var(--radius);
     box-shadow: var(--shadow);
     padding: 1.5rem;
-}
-
-.card h2 {
-    font-size: 1.05rem;
-    font-weight: 600;
-    margin: 0 0 1.2rem;
-}
-
-/* Form */
-
-.campo {
-    margin-bottom: 1.1rem;
-}
-
-.campo label {
-    display: block;
-    margin-bottom: 0.4rem;
-    font-size: 0.85rem;
-    font-weight: 500;
-    color: var(--text);
-}
-
-.campo input,
-.campo select {
-    width: 100%;
-    padding: 0.6rem 0.75rem;
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    font-size: 0.95rem;
-    font-family: inherit;
-    color: var(--text);
-    background-color: var(--surface);
-    transition: border-color 0.15s ease, box-shadow 0.15s ease;
-}
-
-.campo input:focus,
-.campo select:focus {
-    outline: none;
-    border-color: var(--primary);
-    box-shadow: 0 0 0 3px var(--primary-soft);
-}
-
-.campo-data {
-    display: flex;
-    align-items: center;
-    gap: 0.6rem;
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 0.5rem 0.75rem;
-    background-color: var(--surface);
-    transition: border-color 0.15s ease, box-shadow 0.15s ease;
-}
-
-.campo-data:focus-within {
-    border-color: var(--primary);
-    box-shadow: 0 0 0 3px var(--primary-soft);
-}
-
-.campo-data svg {
-    width: 18px;
-    height: 18px;
-    color: var(--text-muted);
-    flex-shrink: 0;
-}
-
-.campo-data input {
-    border: none;
-    outline: none;
-    font-family: inherit;
-    font-size: 0.95rem;
-    width: 100%;
-    color: var(--text);
-    background: transparent;
-    padding: 0;
-}
-
-.ajuda {
-    margin: 0.4rem 0 0;
-    font-size: 0.78rem;
-    color: var(--text-muted);
-}
-
-.mensagem {
-    font-size: 0.85rem;
-    font-weight: 500;
-    padding: 0.65rem 0.85rem;
-    border-radius: 8px;
-    margin: 0 0 1.1rem;
-}
-
-.mensagem.erro {
-    background-color: var(--danger-soft);
-    color: var(--danger);
-}
-
-.mensagem.sucesso {
-    background-color: var(--success-soft);
-    color: var(--success);
-}
-
-.btn-largo {
-    width: 100%;
-    padding: 0.7rem 1.1rem;
-    font-size: 0.95rem;
-    margin-bottom: 0.2rem;
-}
-
-.botoes {
-    display: flex;
-    gap: 0.6rem;
-    margin-top: 0.2rem;
-}
-
-.botoes .btn {
-    flex: 1;
-    padding: 0.65rem 1.1rem;
-    font-size: 0.9rem;
-}
-
-.btn-secondary {
-    background-color: transparent;
-    color: var(--text-muted);
-    border: 1px solid var(--border);
-}
-
-.btn-secondary:hover {
-    background-color: var(--bg);
-    color: var(--text);
-}
-
-.acao-btn {
-    padding: 0.4rem 0.65rem;
-    font-size: 0.8rem;
-    font-weight: 600;
-    border: 1px solid var(--border);
-    border-radius: 7px;
-    background-color: var(--surface);
-    color: var(--text-muted);
-    cursor: pointer;
-    transition: all 0.15s ease;
-}
-
-.acao-btn:hover {
-    border-color: var(--danger);
-    color: var(--danger);
-    background-color: var(--danger-soft);
-}
-
-.validade-expirada {
-    color: var(--danger);
-    font-weight: 600;
 }
 
 .table-header {
@@ -292,29 +126,10 @@ body {
     gap: 0.8rem;
 }
 
-.table-header-acoes {
-    display: flex;
-    align-items: center;
-    gap: 0.7rem;
-    flex-wrap: wrap;
-}
-
-.busca-input {
-    padding: 0.5rem 0.75rem;
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    font-size: 0.85rem;
-    font-family: inherit;
-    color: var(--text);
-    background-color: var(--surface);
-    min-width: 220px;
-    transition: border-color 0.15s ease, box-shadow 0.15s ease;
-}
-
-.busca-input:focus {
-    outline: none;
-    border-color: var(--primary);
-    box-shadow: 0 0 0 3px var(--primary-soft);
+.table-header h2 {
+    font-size: 1.05rem;
+    font-weight: 600;
+    margin: 0;
 }
 
 .badge {
@@ -361,64 +176,38 @@ tbody tr:hover {
     background-color: var(--bg);
 }
 
-.nome-produto {
+.nome-empresa {
     font-weight: 600;
 }
 
-.carrossel-badge {
-    display: inline-block;
-    padding: 0.2rem 0.6rem;
-    border-radius: 999px;
-    font-size: 0.78rem;
-    font-weight: 600;
-    background-color: #f3f4f6;
-    color: var(--text-muted);
-}
-
-.carrossel-badge.sim {
-    background-color: var(--primary-soft);
-    color: var(--primary);
-}
-
-.promocao-campo {
+.acoes-cadastro {
     display: flex;
-    align-items: center;
-    gap: 0.4rem;
+    gap: 0.5rem;
+    justify-content: flex-end;
 }
 
-.promocao-input {
-    width: 70px;
-    padding: 0.45rem 0.6rem;
+.acao-btn {
+    padding: 0.4rem 0.75rem;
+    font-size: 0.8rem;
+    font-weight: 600;
     border: 1px solid var(--border);
-    border-radius: 8px;
-    font-size: 0.9rem;
-    font-family: inherit;
-    color: var(--text);
+    border-radius: 7px;
     background-color: var(--surface);
-    transition: border-color 0.15s ease, box-shadow 0.15s ease;
-}
-
-.promocao-input:focus {
-    outline: none;
-    border-color: var(--primary);
-    box-shadow: 0 0 0 3px var(--primary-soft);
-}
-
-.promocao-campo span {
-    font-size: 0.85rem;
     color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.15s ease;
 }
 
-.preco-riscado {
-    text-decoration: line-through;
-    color: var(--text-muted);
-    margin-right: 0.4rem;
-    font-size: 0.85rem;
-}
-
-.preco-promocional {
-    font-weight: 700;
+.aprovar:hover {
+    border-color: var(--success);
     color: var(--success);
+    background-color: var(--success-soft);
+}
+
+.rejeitar:hover {
+    border-color: var(--danger);
+    color: var(--danger);
+    background-color: var(--danger-soft);
 }
 
 /* Empty state */

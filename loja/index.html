@@ -21,22 +21,22 @@
                 </div>
 
                 <div class="topbar-direita">
-                    <div class="conta" id="conta-deslogada">
-                        <a href="../login/index.html" class="link-admin">Entrar</a>
-                    </div>
-
-                    <div class="conta-logada" id="conta-logada" hidden>
+                    <div class="conta-logada" id="conta-logada">
                         <button type="button" id="btn-conta-menu" class="conta-nome-btn">
-                            <span id="conta-nome"></span>
+                            <span id="conta-nome">Minha conta</span>
+                            <span class="carrinho-contador" id="carrinho-contador" hidden>0</span>
                             <svg class="chevron" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                                 <path d="M6 9L12 15L18 9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
                             </svg>
                         </button>
                         <div class="conta-menu" id="conta-menu" hidden>
+                            <button type="button" id="btn-abrir-carrinho" class="conta-menu-item">Carrinho</button>
+                            <a href="../login/index.html" id="link-entrar-menu" class="conta-menu-item">Entrar</a>
                             <a href="../estoque/index.html" id="link-estoque-menu" class="conta-menu-item" hidden>Estoque</a>
                             <a href="../usuarios/index.html" id="link-usuarios-menu" class="conta-menu-item" hidden>Usuários</a>
                             <a href="../promocoes/index.html" id="link-promocoes-menu" class="conta-menu-item" hidden>Promoções</a>
-                            <button type="button" id="btn-sair" class="conta-menu-item conta-menu-sair">Sair</button>
+                            <a href="../cadastros/index.html" id="link-cadastros-menu" class="conta-menu-item" hidden>Cadastros</a>
+                            <button type="button" id="btn-sair" class="conta-menu-item conta-menu-sair" hidden>Sair</button>
                         </div>
                     </div>
                 </div>
@@ -50,16 +50,6 @@
                     </svg>
                     <input type="text" id="busca-produto" placeholder="Buscar produtos...">
                 </div>
-
-                <button type="button" id="btn-carrinho" class="btn-carrinho">
-                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M3 4H5L6.2 6M6.2 6H20L18 13H7.5M6.2 6L8.2 16H18" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
-                        <circle cx="9" cy="20" r="1.3" fill="currentColor"/>
-                        <circle cx="17" cy="20" r="1.3" fill="currentColor"/>
-                    </svg>
-                    Carrinho
-                    <span class="carrinho-contador" id="carrinho-contador" hidden>0</span>
-                </button>
             </div>
         </header>
 

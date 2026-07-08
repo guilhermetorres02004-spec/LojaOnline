@@ -27,6 +27,7 @@
                 </div>
             </div>
             <nav class="topbar-nav">
+                <a href="../cadastros/index.html" id="link-cadastros" class="link-loja">Cadastros</a>
                 <a href="../estoque/index.html" id="link-estoque" class="link-loja">Estoque</a>
                 <a href="../promocoes/index.html" id="link-promocoes" class="link-loja">Promoções</a>
                 <a href="../loja/index.html" id="link-loja" class="link-loja">Ver loja</a>
@@ -51,11 +52,13 @@
 
             <div class="grid">
                 <section class="card form-card">
-                    <h2>Novo usuário</h2>
+                    <h2 id="form-usuario-titulo">Novo usuário</h2>
 
                     <button type="button" id="btn-abrir-form-usuario" class="btn btn-primary btn-largo">Cadastrar usuário</button>
 
-                    <form id="form-criar-usuario" hidden autocomplete="off">
+                    <form id="form-criar-usuario" hidden autocomplete="off" novalidate>
+                        <input type="hidden" id="usuario-id">
+
                         <div class="campo">
                             <label for="novo-nome">Nome</label>
                             <input type="text" id="novo-nome" placeholder="Nome completo" autocomplete="off" required>
@@ -72,7 +75,7 @@
                         </div>
 
                         <div class="campo">
-                            <label for="novo-senha">Senha</label>
+                            <label for="novo-senha" id="novo-senha-label">Senha</label>
                             <input type="password" id="novo-senha" placeholder="Crie uma senha" minlength="4" autocomplete="new-password" required>
                         </div>
 
@@ -80,6 +83,7 @@
                             <label for="novo-papel">Permissão</label>
                             <select id="novo-papel">
                                 <option value="cliente">Cliente</option>
+                                <option value="vendedor">Vendedor</option>
                                 <option value="admin">Administrador</option>
                             </select>
                         </div>
@@ -87,7 +91,7 @@
                         <p class="mensagem" id="mensagem-criar-usuario" hidden></p>
 
                         <div class="botoes">
-                            <button type="submit" class="btn btn-primary">Criar usuário</button>
+                            <button type="submit" class="btn btn-primary" id="btn-salvar-usuario">Criar usuário</button>
                             <button type="button" id="btn-cancelar-form-usuario" class="btn btn-secondary">Cancelar</button>
                         </div>
                     </form>
@@ -113,10 +117,11 @@
                                 <tr>
                                     <th>Nome</th>
                                     <th>E-mail</th>
-                                    <th>CPF</th>
+                                    <th>CPF/CNPJ</th>
                                     <th>Papel</th>
                                     <th>Compras</th>
                                     <th>Total gasto</th>
+                                    <th></th>
                                 </tr>
                             </thead>
                             <tbody id="lista-usuarios"></tbody>

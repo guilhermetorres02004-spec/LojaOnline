@@ -25,6 +25,7 @@
                 </div>
             </div>
             <nav class="topbar-nav">
+                <a href="../cadastros/index.html" id="link-cadastros" class="link-loja">Cadastros</a>
                 <a href="../estoque/index.html" id="link-estoque" class="link-loja">Estoque</a>
                 <a href="../usuarios/index.html" id="link-usuarios" class="link-loja">Usuários</a>
                 <a href="../loja/index.html" id="link-loja" class="link-loja">Ver loja</a>
@@ -32,40 +33,85 @@
         </header>
 
         <main class="content">
-            <section class="card table-card">
-                <div class="table-header">
-                    <h2>Produtos</h2>
-                    <div class="table-header-acoes">
-                        <input type="text" id="busca-produto" class="busca-input" placeholder="Buscar por nome, tipo ou marca...">
-                        <span class="badge" id="contador-produtos">0 produtos</span>
+            <div class="grid">
+                <section class="card form-card">
+                    <h2>Nova promoção</h2>
+
+                    <button type="button" id="btn-abrir-form-promocao" class="btn btn-primary btn-largo">Adicionar promoção</button>
+
+                    <form id="form-promocao" hidden novalidate>
+                        <div class="campo">
+                            <label for="promo-produto">Produto</label>
+                            <select id="promo-produto" required>
+                                <option value="">Selecione um produto</option>
+                            </select>
+                        </div>
+
+                        <div class="campo">
+                            <label for="promo-percentual">Desconto (%)</label>
+                            <input type="number" id="promo-percentual" min="1" max="90" placeholder="Ex: 20" required>
+                        </div>
+
+                        <div class="campo">
+                            <label for="promo-validade">Válida até</label>
+                            <div class="campo-data">
+                                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <rect x="3.5" y="5" width="17" height="15" rx="2" stroke="currentColor" stroke-width="1.6"/>
+                                    <path d="M3.5 9.5H20.5" stroke="currentColor" stroke-width="1.6"/>
+                                    <path d="M8 3V6.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+                                    <path d="M16 3V6.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+                                </svg>
+                                <input type="date" id="promo-validade" required>
+                            </div>
+                            <p class="ajuda">Obrigatório: a promoção deixa de valer automaticamente após essa data.</p>
+                        </div>
+
+                        <p class="mensagem" id="mensagem-promocao" hidden></p>
+
+                        <div class="botoes">
+                            <button type="submit" class="btn btn-primary">Aplicar promoção</button>
+                            <button type="button" id="btn-cancelar-promocao" class="btn btn-secondary">Cancelar</button>
+                        </div>
+                    </form>
+                </section>
+
+                <section class="card table-card">
+                    <div class="table-header">
+                        <h2>Produtos</h2>
+                        <div class="table-header-acoes">
+                            <input type="text" id="busca-produto" class="busca-input" placeholder="Buscar por nome, tipo ou marca...">
+                            <span class="badge" id="contador-produtos">0 produtos</span>
+                        </div>
                     </div>
-                </div>
 
-                <div class="table-wrapper">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Nome</th>
-                                <th>Marca</th>
-                                <th>No carrossel</th>
-                                <th>Preço original</th>
-                                <th>Promoção (%)</th>
-                                <th>Preço com desconto</th>
-                            </tr>
-                        </thead>
-                        <tbody id="lista-promocoes"></tbody>
-                    </table>
-                </div>
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Nome</th>
+                                    <th>Marca</th>
+                                    <th>No carrossel</th>
+                                    <th>Preço original</th>
+                                    <th>Desconto</th>
+                                    <th>Válida até</th>
+                                    <th>Preço com desconto</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody id="lista-promocoes"></tbody>
+                        </table>
+                    </div>
 
-                <div class="vazio" id="vazio-promocoes" hidden>
-                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M3 7L12 3L21 7V17L12 21L3 17V7Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
-                        <path d="M3 7L12 11L21 7" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
-                        <path d="M12 11V21" stroke="currentColor" stroke-width="1.4"/>
-                    </svg>
-                    <p id="vazio-promocoes-texto">Nenhum produto cadastrado ainda.</p>
-                </div>
-            </section>
+                    <div class="vazio" id="vazio-promocoes" hidden>
+                        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M3 7L12 3L21 7V17L12 21L3 17V7Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
+                            <path d="M3 7L12 11L21 7" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
+                            <path d="M12 11V21" stroke="currentColor" stroke-width="1.4"/>
+                        </svg>
+                        <p id="vazio-promocoes-texto">Nenhum produto cadastrado ainda.</p>
+                    </div>
+                </section>
+            </div>
         </main>
     </div>
 
