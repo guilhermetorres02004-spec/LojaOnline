@@ -1,5 +1,44 @@
-const CHAVE_USUARIOS = "loja-usuarios";
-const CHAVE_SESSAO = "loja-usuario-logado";
+const CHAVE_TOKEN = "wgstore_token";
+
+function decodificarToken(token) {
+    try {
+        const payload = token.split(".")[1];
+        const json = decodeURIComponent(
+            atob(payload.replace(/-/g, "+").replace(/_/g, "/"))
+                .split("")
+                .map((c) => "%" + c.charCodeAt(0).toString(16).padStart(2, "0"))
+                .join("")
+        );
+        return JSON.parse(json);
+    } catch (erro) {
+        return null;
+    }
+}
+
+function carregarSessao() {
+    const token = localStorage.getItem(CHAVE_TOKEN);
+    if (!token) return null;
+    const payload = decodificarToken(token);
+    if (!payload) return null;
+    return { id: payload.id, nome: payload.nome, email: payload.email, papel: payload.papel, token };
+}
+
+function salvarToken(token) {
+    localStorage.setItem(CHAVE_TOKEN, token);
+}
+
+async function apiFetch(caminho, opcoes) {
+    const sessao = carregarSessao();
+    const cabecalhos = Object.assign({ "Content-Type": "application/json" }, (opcoes && opcoes.headers) || {});
+    if (sessao) cabecalhos.Authorization = `Bearer ${sessao.token}`;
+
+    const resposta = await fetch(caminho, { ...opcoes, headers: cabecalhos });
+    const dados = await resposta.json().catch(() => ({}));
+    if (!resposta.ok) {
+        throw new Error(dados.erro || "Erro inesperado. Tente novamente.");
+    }
+    return dados;
+}
 
 const abaEntrar = document.getElementById("aba-entrar");
 const abaCadastrar = document.getElementById("aba-cadastrar");
@@ -12,57 +51,12 @@ const campoCpf = document.getElementById("cadastro-cpf");
 const campoCnpj = document.getElementById("empresa-cnpj");
 const campoTelefone = document.getElementById("empresa-telefone");
 
-function carregarUsuarios() {
-    const dados = localStorage.getItem(CHAVE_USUARIOS);
-    return dados ? JSON.parse(dados) : [];
-}
-
-function salvarUsuarios(usuarios) {
-    localStorage.setItem(CHAVE_USUARIOS, JSON.stringify(usuarios));
-}
-
-function garantirAdminMestre() {
-    const usuarios = carregarUsuarios();
-    if (usuarios.some((usuario) => usuario.email === "admin@local.net")) return;
-
-    usuarios.push({
-        id: "admin-mestre",
-        nome: "Administrador",
-        email: "admin@local.net",
-        cpf: "",
-        senha: "capela9797",
-        papel: "admin",
-        comprasRealizadas: 0,
-        totalGasto: 0,
-    });
-    salvarUsuarios(usuarios);
-}
-
-garantirAdminMestre();
-
-function carregarSessao() {
-    const dados = localStorage.getItem(CHAVE_SESSAO);
-    return dados ? JSON.parse(dados) : null;
-}
-
 if (carregarSessao()) {
     window.location.href = "../loja/index.html";
 }
 
-function definirSessao(usuario) {
-    const sessao = {
-        id: usuario.id,
-        nome: usuario.nome,
-        email: usuario.email,
-        papel: usuario.papel || "cliente",
-    };
-    localStorage.setItem(CHAVE_SESSAO, JSON.stringify(sessao));
-    return sessao;
-}
-
-function irParaLoja(sessao) {
-    const parametro = encodeURIComponent(JSON.stringify(sessao));
-    window.location.href = `../loja/index.html?sessao=${parametro}`;
+function irParaLoja() {
+    window.location.href = "../loja/index.html";
 }
 
 function mascararCpf(valor) {
@@ -177,32 +171,27 @@ abaEntrar.addEventListener("click", () => mostrarAba("entrar"));
 abaCadastrar.addEventListener("click", () => mostrarAba("cadastrar"));
 abaEmpresa.addEventListener("click", () => mostrarAba("empresa"));
 
-formEntrar.addEventListener("submit", (evento) => {
+formEntrar.addEventListener("submit", async (evento) => {
     evento.preventDefault();
     esconderMensagem();
 
     const email = document.getElementById("entrar-email").value.trim().toLowerCase();
     const senha = document.getElementById("entrar-senha").value;
 
-    const usuarios = carregarUsuarios();
-    const usuario = usuarios.find((item) => item.email.toLowerCase() === email && item.senha === senha);
-
-    if (!usuario) {
-        mostrarMensagem("E-mail ou senha inválidos.", "erro");
-        return;
+    try {
+        const dados = await apiFetch("/api/auth/login", {
+            method: "POST",
+            body: JSON.stringify({ email, senha }),
+        });
+        salvarToken(dados.token);
+        mostrarMensagem(`Bem-vindo(a), ${dados.usuario.nome}! Redirecionando...`, "sucesso");
+        setTimeout(irParaLoja, 600);
+    } catch (erro) {
+        mostrarMensagem(erro.message, "erro");
     }
-
-    if (usuario.statusCadastro === "pendente") {
-        mostrarMensagem("Seu cadastro ainda está em análise. Aguarde a aprovação do administrador.", "erro");
-        return;
-    }
-
-    const sessao = definirSessao(usuario);
-    mostrarMensagem(`Bem-vindo(a), ${usuario.nome}! Redirecionando...`, "sucesso");
-    setTimeout(() => irParaLoja(sessao), 600);
 });
 
-formCadastrar.addEventListener("submit", (evento) => {
+formCadastrar.addEventListener("submit", async (evento) => {
     evento.preventDefault();
     esconderMensagem();
 
@@ -232,39 +221,20 @@ formCadastrar.addEventListener("submit", (evento) => {
         return;
     }
 
-    const usuarios = carregarUsuarios();
-    const jaExiste = usuarios.some((item) => item.email.toLowerCase() === email);
-    if (jaExiste) {
-        mostrarMensagem("Já existe uma conta com esse e-mail.", "erro");
-        return;
+    try {
+        const dados = await apiFetch("/api/auth/cadastro", {
+            method: "POST",
+            body: JSON.stringify({ nome, email, cpf, senha }),
+        });
+        salvarToken(dados.token);
+        mostrarMensagem("Conta criada com sucesso! Redirecionando...", "sucesso");
+        setTimeout(irParaLoja, 600);
+    } catch (erro) {
+        mostrarMensagem(erro.message, "erro");
     }
-
-    const cpfJaExiste = usuarios.some((item) => item.cpf === cpf);
-    if (cpfJaExiste) {
-        mostrarMensagem("Já existe uma conta com esse CPF.", "erro");
-        return;
-    }
-
-    const novoUsuario = {
-        id: Date.now().toString(),
-        nome,
-        email,
-        cpf,
-        senha,
-        papel: "cliente",
-        comprasRealizadas: 0,
-        totalGasto: 0,
-    };
-
-    usuarios.push(novoUsuario);
-    salvarUsuarios(usuarios);
-    const sessao = definirSessao(novoUsuario);
-
-    mostrarMensagem("Conta criada com sucesso! Redirecionando...", "sucesso");
-    setTimeout(() => irParaLoja(sessao), 600);
 });
 
-formEmpresa.addEventListener("submit", (evento) => {
+formEmpresa.addEventListener("submit", async (evento) => {
     evento.preventDefault();
     esconderMensagem();
 
@@ -300,34 +270,15 @@ formEmpresa.addEventListener("submit", (evento) => {
         return;
     }
 
-    const usuarios = carregarUsuarios();
-
-    if (usuarios.some((usuario) => usuario.email.toLowerCase() === email)) {
-        mostrarMensagem("Já existe um cadastro com esse e-mail.", "erro");
-        return;
+    try {
+        await apiFetch("/api/auth/cadastro-empresa", {
+            method: "POST",
+            body: JSON.stringify({ nomeEmpresa, email, cnpj, telefone, senha }),
+        });
+        formEmpresa.reset();
+        mostrarMensagem("Cadastro enviado! Você poderá entrar assim que o administrador aprovar.", "sucesso");
+        setTimeout(() => mostrarAba("entrar"), 2200);
+    } catch (erro) {
+        mostrarMensagem(erro.message, "erro");
     }
-
-    if (usuarios.some((usuario) => usuario.cnpj === cnpj)) {
-        mostrarMensagem("Já existe um cadastro com esse CNPJ.", "erro");
-        return;
-    }
-
-    usuarios.push({
-        id: Date.now().toString(),
-        nome: nomeEmpresa,
-        email,
-        cnpj,
-        telefone,
-        senha,
-        papel: "vendedor",
-        statusCadastro: "pendente",
-        dataCadastro: new Date().toISOString(),
-        comprasRealizadas: 0,
-        totalGasto: 0,
-    });
-
-    salvarUsuarios(usuarios);
-    formEmpresa.reset();
-    mostrarMensagem("Cadastro enviado! Você poderá entrar assim que o administrador aprovar.", "sucesso");
-    setTimeout(() => mostrarAba("entrar"), 2200);
 });

@@ -1,5 +1,4 @@
-const CHAVE_ARMAZENAMENTO = "estoque-produtos";
-const CHAVE_SESSAO = "loja-usuario-logado";
+const CHAVE_TOKEN = "wgstore_token";
 const LIMIAR_ESTOQUE_BAIXO = 5;
 const LIMITE_PRODUTOS_VENDEDOR_DIA = 30;
 
@@ -11,29 +10,43 @@ const iconeFotoVazia = `
     </svg>
 `;
 
-function importarSessaoDaUrl() {
-    const parametros = new URLSearchParams(window.location.search);
-    const sessaoCodificada = parametros.get("sessao");
-    if (!sessaoCodificada) return;
-
-    localStorage.setItem(CHAVE_SESSAO, sessaoCodificada);
-    parametros.delete("sessao");
-    const query = parametros.toString();
-    window.history.replaceState({}, "", window.location.pathname + (query ? `?${query}` : ""));
-}
-
-function carregarSessaoAtual() {
-    const dados = localStorage.getItem(CHAVE_SESSAO);
-    if (!dados) return null;
+function decodificarToken(token) {
     try {
-        return JSON.parse(dados);
+        const payload = token.split(".")[1];
+        const json = decodeURIComponent(
+            atob(payload.replace(/-/g, "+").replace(/_/g, "/"))
+                .split("")
+                .map((c) => "%" + c.charCodeAt(0).toString(16).padStart(2, "0"))
+                .join("")
+        );
+        return JSON.parse(json);
     } catch (erro) {
         return null;
     }
 }
 
-importarSessaoDaUrl();
-const sessaoUsuario = carregarSessaoAtual();
+function carregarSessao() {
+    const token = localStorage.getItem(CHAVE_TOKEN);
+    if (!token) return null;
+    const payload = decodificarToken(token);
+    if (!payload) return null;
+    return { id: payload.id, nome: payload.nome, email: payload.email, papel: payload.papel, token };
+}
+
+async function apiFetch(caminho, opcoes) {
+    const sessao = carregarSessao();
+    const cabecalhos = Object.assign({ "Content-Type": "application/json" }, (opcoes && opcoes.headers) || {});
+    if (sessao) cabecalhos.Authorization = `Bearer ${sessao.token}`;
+
+    const resposta = await fetch(caminho, { ...opcoes, headers: cabecalhos });
+    const dados = await resposta.json().catch(() => ({}));
+    if (!resposta.ok) {
+        throw new Error(dados.erro || "Erro inesperado. Tente novamente.");
+    }
+    return dados;
+}
+
+const sessaoUsuario = carregarSessao();
 const ehAdmin = Boolean(sessaoUsuario && sessaoUsuario.papel === "admin");
 const ehVendedor = Boolean(sessaoUsuario && sessaoUsuario.papel === "vendedor");
 const autorizado = ehAdmin || ehVendedor;
@@ -49,13 +62,6 @@ if (autorizado) {
     linkCadastros.hidden = !ehAdmin;
     linkUsuarios.hidden = !ehAdmin;
     linkPromocoes.hidden = !ehAdmin;
-
-    if (ehAdmin) {
-        const parametro = encodeURIComponent(localStorage.getItem(CHAVE_SESSAO));
-        linkCadastros.href = `../cadastros/index.html?sessao=${parametro}`;
-        linkUsuarios.href = `../usuarios/index.html?sessao=${parametro}`;
-        linkPromocoes.href = `../promocoes/index.html?sessao=${parametro}`;
-    }
 }
 
 const form = document.getElementById("form-produto");
@@ -103,12 +109,7 @@ campoFoto.addEventListener("change", () => {
 });
 
 function carregarProdutos() {
-    const dados = localStorage.getItem(CHAVE_ARMAZENAMENTO);
-    return dados ? JSON.parse(dados) : [];
-}
-
-function salvarProdutos(produtos) {
-    localStorage.setItem(CHAVE_ARMAZENAMENTO, JSON.stringify(produtos));
+    return apiFetch("/api/produtos");
 }
 
 function formatarPreco(valor) {
@@ -119,23 +120,19 @@ function hojeIso() {
     return new Date().toISOString().split("T")[0];
 }
 
-function contarProdutosHojePorUsuario(usuarioId) {
-    const hoje = hojeIso();
-    return carregarProdutos().filter((produto) => produto.criadoPorId === usuarioId && produto.criadoEm === hoje).length;
-}
-
 function mostrarMensagemProduto(texto, tipo) {
     mensagemProduto.textContent = texto;
     mensagemProduto.className = `mensagem ${tipo}`;
     mensagemProduto.hidden = false;
 }
 
-function atualizarLimiteVendedor() {
+function atualizarLimiteVendedor(produtos) {
     if (!ehVendedor || !sessaoUsuario) {
         limiteVendedorTexto.hidden = true;
         return;
     }
-    const total = contarProdutosHojePorUsuario(sessaoUsuario.id);
+    const hoje = hojeIso();
+    const total = produtos.filter((produto) => produto.criadoPorId === sessaoUsuario.id && produto.criadoEm === hoje).length;
     limiteVendedorTexto.hidden = false;
     limiteVendedorTexto.textContent = `Você já anunciou ${total} de ${LIMITE_PRODUTOS_VENDEDOR_DIA} produtos hoje.`;
 }
@@ -175,14 +172,16 @@ function atualizarFiltroProduto(produtos) {
     filtroProduto.value = filtroAtual;
 }
 
-function renderizarProdutos() {
-    const produtos = carregarProdutos();
+async function renderizarProdutos() {
+    const produtos = await carregarProdutos();
     const idsExistentes = new Set(produtos.map((produto) => produto.id));
     selecionados.forEach((id) => {
         if (!idsExistentes.has(id)) selecionados.delete(id);
     });
 
     atualizarFiltroProduto(produtos);
+    atualizarLimiteVendedor(produtos);
+
     const produtosFiltrados = filtroAtual === "todos"
         ? produtos
         : produtos.filter((produto) => obterTipo(produto) === filtroAtual);
@@ -244,11 +243,10 @@ function limparFormulario() {
     btnCancelar.hidden = true;
 }
 
-form.addEventListener("submit", (evento) => {
+form.addEventListener("submit", async (evento) => {
     evento.preventDefault();
     mensagemProduto.hidden = true;
 
-    const produtos = carregarProdutos();
     const id = campoId.value;
     const nome = campoNome.value.trim();
     const tipo = campoTipo.value.trim();
@@ -263,66 +261,35 @@ form.addEventListener("submit", (evento) => {
         return;
     }
 
-    if (!id && ehVendedor) {
-        const totalHoje = contarProdutosHojePorUsuario(sessaoUsuario.id);
-        if (totalHoje >= LIMITE_PRODUTOS_VENDEDOR_DIA) {
-            mostrarMensagemProduto(
-                `Você atingiu o limite de ${LIMITE_PRODUTOS_VENDEDOR_DIA} produtos por dia. Tente novamente amanhã.`,
-                "erro"
-            );
-            return;
+    const corpo = { nome, tipo, marca, quantidade, preco, foto: fotoAtual, descricao, noCarrossel };
+
+    try {
+        if (id) {
+            await apiFetch(`/api/produtos/${id}`, { method: "PUT", body: JSON.stringify(corpo) });
+        } else {
+            await apiFetch("/api/produtos", { method: "POST", body: JSON.stringify(corpo) });
         }
+        await renderizarProdutos();
+        limparFormulario();
+    } catch (erro) {
+        mostrarMensagemProduto(erro.message, "erro");
     }
-
-    if (id) {
-        const produto = produtos.find((item) => item.id === id);
-        produto.nome = nome;
-        produto.tipo = tipo;
-        produto.marca = marca;
-        produto.quantidade = quantidade;
-        produto.preco = preco;
-        produto.foto = fotoAtual;
-        produto.descricao = descricao;
-        produto.noCarrossel = noCarrossel;
-    } else {
-        produtos.push({
-            id: Date.now().toString(),
-            nome,
-            tipo,
-            marca,
-            quantidade,
-            preco,
-            foto: fotoAtual,
-            descricao,
-            noCarrossel,
-            criadoPorId: sessaoUsuario ? sessaoUsuario.id : null,
-            criadoEm: hojeIso(),
-        });
-    }
-
-    salvarProdutos(produtos);
-    renderizarProdutos();
-    atualizarLimiteVendedor();
-    limparFormulario();
 });
 
-listaProdutos.addEventListener("click", (evento) => {
+listaProdutos.addEventListener("click", async (evento) => {
     const id = evento.target.dataset.id;
     if (!id) return;
 
-    const produtos = carregarProdutos();
-
     if (evento.target.classList.contains("remover")) {
-        const restantes = produtos.filter((item) => item.id !== id);
+        await apiFetch(`/api/produtos/${id}`, { method: "DELETE" });
         selecionados.delete(id);
-        salvarProdutos(restantes);
-        renderizarProdutos();
+        await renderizarProdutos();
         limparFormulario();
         return;
     }
 
     if (evento.target.classList.contains("editar")) {
-        const produto = produtos.find((item) => item.id === id);
+        const produto = await apiFetch(`/api/produtos/${id}`);
         campoId.value = produto.id;
         campoNome.value = produto.nome;
         campoTipo.value = produto.tipo || "";
@@ -347,7 +314,7 @@ listaProdutos.addEventListener("click", (evento) => {
     }
 });
 
-listaProdutos.addEventListener("change", (evento) => {
+listaProdutos.addEventListener("change", async (evento) => {
     if (!evento.target.classList.contains("checkbox-produto")) return;
 
     const id = evento.target.dataset.id;
@@ -359,7 +326,8 @@ listaProdutos.addEventListener("change", (evento) => {
         evento.target.closest("tr").classList.remove("linha-selecionada");
     }
 
-    const produtosVisiveis = carregarProdutos().filter((produto) =>
+    const produtos = await carregarProdutos();
+    const produtosVisiveis = produtos.filter((produto) =>
         filtroAtual === "todos" || obterTipo(produto) === filtroAtual
     );
     selecionarTodos.checked = produtosVisiveis.length > 0 &&
@@ -367,8 +335,9 @@ listaProdutos.addEventListener("change", (evento) => {
     atualizarBotaoRemoverSelecionados();
 });
 
-selecionarTodos.addEventListener("change", () => {
-    const produtosVisiveis = carregarProdutos().filter((produto) =>
+selecionarTodos.addEventListener("change", async () => {
+    const produtos = await carregarProdutos();
+    const produtosVisiveis = produtos.filter((produto) =>
         filtroAtual === "todos" || obterTipo(produto) === filtroAtual
     );
 
@@ -386,14 +355,12 @@ filtroProduto.addEventListener("change", () => {
     renderizarProdutos();
 });
 
-btnRemoverSelecionados.addEventListener("click", () => {
+btnRemoverSelecionados.addEventListener("click", async () => {
     if (selecionados.size === 0) return;
 
-    const produtos = carregarProdutos();
-    const restantes = produtos.filter((produto) => !selecionados.has(produto.id));
+    await apiFetch("/api/produtos", { method: "DELETE", body: JSON.stringify({ ids: [...selecionados] }) });
     selecionados.clear();
-    salvarProdutos(restantes);
-    renderizarProdutos();
+    await renderizarProdutos();
     limparFormulario();
 });
 
@@ -401,5 +368,4 @@ btnCancelar.addEventListener("click", limparFormulario);
 
 if (autorizado) {
     renderizarProdutos();
-    atualizarLimiteVendedor();
 }

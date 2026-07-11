@@ -1,40 +1,45 @@
-const CHAVE_USUARIOS = "loja-usuarios";
-const CHAVE_SESSAO = "loja-usuario-logado";
+const CHAVE_TOKEN = "wgstore_token";
 
-function importarSessaoDaUrl() {
-    const parametros = new URLSearchParams(window.location.search);
-    const sessaoCodificada = parametros.get("sessao");
-    if (!sessaoCodificada) return;
-
-    localStorage.setItem(CHAVE_SESSAO, sessaoCodificada);
-    parametros.delete("sessao");
-    const query = parametros.toString();
-    window.history.replaceState({}, "", window.location.pathname + (query ? `?${query}` : ""));
-}
-
-function usuarioEhAdmin() {
-    const dados = localStorage.getItem(CHAVE_SESSAO);
-    if (!dados) return false;
+function decodificarToken(token) {
     try {
-        return JSON.parse(dados).papel === "admin";
+        const payload = token.split(".")[1];
+        const json = decodeURIComponent(
+            atob(payload.replace(/-/g, "+").replace(/_/g, "/"))
+                .split("")
+                .map((c) => "%" + c.charCodeAt(0).toString(16).padStart(2, "0"))
+                .join("")
+        );
+        return JSON.parse(json);
     } catch (erro) {
-        return false;
+        return null;
     }
 }
 
-importarSessaoDaUrl();
-const autorizado = usuarioEhAdmin();
+function carregarSessao() {
+    const token = localStorage.getItem(CHAVE_TOKEN);
+    if (!token) return null;
+    const payload = decodificarToken(token);
+    if (!payload) return null;
+    return { id: payload.id, nome: payload.nome, email: payload.email, papel: payload.papel, token };
+}
+
+async function apiFetch(caminho, opcoes) {
+    const sessao = carregarSessao();
+    const cabecalhos = Object.assign({ "Content-Type": "application/json" }, (opcoes && opcoes.headers) || {});
+    if (sessao) cabecalhos.Authorization = `Bearer ${sessao.token}`;
+
+    const resposta = await fetch(caminho, { ...opcoes, headers: cabecalhos });
+    const dados = await resposta.json().catch(() => ({}));
+    if (!resposta.ok) {
+        throw new Error(dados.erro || "Erro inesperado. Tente novamente.");
+    }
+    return dados;
+}
+
+const sessaoUsuario = carregarSessao();
+const autorizado = Boolean(sessaoUsuario && sessaoUsuario.papel === "admin");
 document.getElementById("app-cadastros").hidden = !autorizado;
 document.getElementById("acesso-negado").hidden = autorizado;
-
-if (autorizado) {
-    const sessaoAtual = localStorage.getItem(CHAVE_SESSAO);
-    const parametro = encodeURIComponent(sessaoAtual);
-    document.getElementById("link-estoque").href = `../estoque/index.html?sessao=${parametro}`;
-    document.getElementById("link-usuarios").href = `../usuarios/index.html?sessao=${parametro}`;
-    document.getElementById("link-promocoes").href = `../promocoes/index.html?sessao=${parametro}`;
-    document.getElementById("link-loja").href = `../loja/index.html?sessao=${parametro}`;
-}
 
 const listaCadastros = document.getElementById("lista-cadastros");
 const vazioCadastros = document.getElementById("vazio-cadastros");
@@ -43,13 +48,8 @@ const toast = document.getElementById("toast");
 
 let toastTimeout = null;
 
-function carregarUsuarios() {
-    const dados = localStorage.getItem(CHAVE_USUARIOS);
-    return dados ? JSON.parse(dados) : [];
-}
-
-function salvarUsuarios(usuarios) {
-    localStorage.setItem(CHAVE_USUARIOS, JSON.stringify(usuarios));
+function carregarCadastrosPendentes() {
+    return apiFetch("/api/cadastros");
 }
 
 function formatarCnpj(cnpj) {
@@ -79,10 +79,8 @@ function mostrarToast(mensagem) {
     }, 2600);
 }
 
-function renderizarCadastros() {
-    const pendentes = carregarUsuarios().filter(
-        (usuario) => usuario.papel === "vendedor" && usuario.statusCadastro === "pendente"
-    );
+async function renderizarCadastros() {
+    const pendentes = await carregarCadastrosPendentes();
 
     contadorCadastros.textContent = `${pendentes.length} ${pendentes.length === 1 ? "pendente" : "pendentes"}`;
     listaCadastros.innerHTML = "";
@@ -114,27 +112,23 @@ function renderizarCadastros() {
 }
 
 if (autorizado) {
-    listaCadastros.addEventListener("click", (evento) => {
+    listaCadastros.addEventListener("click", async (evento) => {
         const id = evento.target.dataset.id;
         if (!id) return;
 
-        const usuarios = carregarUsuarios();
-        const usuario = usuarios.find((item) => item.id === id);
-        if (!usuario) return;
+        const nomeEmpresa = evento.target.closest("tr").querySelector(".nome-empresa").textContent;
 
         if (evento.target.classList.contains("aprovar")) {
-            usuario.statusCadastro = "aprovado";
-            salvarUsuarios(usuarios);
-            renderizarCadastros();
-            mostrarToast(`Cadastro de ${usuario.nome} aprovado! Já pode entrar na conta.`);
+            await apiFetch(`/api/cadastros/${id}/aprovar`, { method: "PUT" });
+            await renderizarCadastros();
+            mostrarToast(`Cadastro de ${nomeEmpresa} aprovado! Já pode entrar na conta.`);
             return;
         }
 
         if (evento.target.classList.contains("rejeitar")) {
-            const restantes = usuarios.filter((item) => item.id !== id);
-            salvarUsuarios(restantes);
-            renderizarCadastros();
-            mostrarToast(`Cadastro de ${usuario.nome} rejeitado.`);
+            await apiFetch(`/api/cadastros/${id}`, { method: "DELETE" });
+            await renderizarCadastros();
+            mostrarToast(`Cadastro de ${nomeEmpresa} rejeitado.`);
         }
     });
 

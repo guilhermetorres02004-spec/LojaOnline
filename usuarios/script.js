@@ -1,45 +1,45 @@
-const CHAVE_USUARIOS = "loja-usuarios";
-const CHAVE_SESSAO = "loja-usuario-logado";
+const CHAVE_TOKEN = "wgstore_token";
 
-function importarSessaoDaUrl() {
-    const parametros = new URLSearchParams(window.location.search);
-    const sessaoCodificada = parametros.get("sessao");
-    if (!sessaoCodificada) return;
-
-    localStorage.setItem(CHAVE_SESSAO, sessaoCodificada);
-    parametros.delete("sessao");
-    const query = parametros.toString();
-    window.history.replaceState({}, "", window.location.pathname + (query ? `?${query}` : ""));
-}
-
-function usuarioEhAdmin() {
-    const dados = localStorage.getItem(CHAVE_SESSAO);
-    if (!dados) return false;
+function decodificarToken(token) {
     try {
-        return JSON.parse(dados).papel === "admin";
+        const payload = token.split(".")[1];
+        const json = decodeURIComponent(
+            atob(payload.replace(/-/g, "+").replace(/_/g, "/"))
+                .split("")
+                .map((c) => "%" + c.charCodeAt(0).toString(16).padStart(2, "0"))
+                .join("")
+        );
+        return JSON.parse(json);
     } catch (erro) {
-        return false;
+        return null;
     }
 }
 
-importarSessaoDaUrl();
-const autorizado = usuarioEhAdmin();
+function carregarSessao() {
+    const token = localStorage.getItem(CHAVE_TOKEN);
+    if (!token) return null;
+    const payload = decodificarToken(token);
+    if (!payload) return null;
+    return { id: payload.id, nome: payload.nome, email: payload.email, papel: payload.papel, token };
+}
+
+async function apiFetch(caminho, opcoes) {
+    const sessao = carregarSessao();
+    const cabecalhos = Object.assign({ "Content-Type": "application/json" }, (opcoes && opcoes.headers) || {});
+    if (sessao) cabecalhos.Authorization = `Bearer ${sessao.token}`;
+
+    const resposta = await fetch(caminho, { ...opcoes, headers: cabecalhos });
+    const dados = await resposta.json().catch(() => ({}));
+    if (!resposta.ok) {
+        throw new Error(dados.erro || "Erro inesperado. Tente novamente.");
+    }
+    return dados;
+}
+
+const sessaoUsuario = carregarSessao();
+const autorizado = Boolean(sessaoUsuario && sessaoUsuario.papel === "admin");
 document.getElementById("app-usuarios").hidden = !autorizado;
 document.getElementById("acesso-negado").hidden = autorizado;
-
-const linkCadastros = document.getElementById("link-cadastros");
-const linkEstoque = document.getElementById("link-estoque");
-const linkPromocoes = document.getElementById("link-promocoes");
-const linkLoja = document.getElementById("link-loja");
-
-if (autorizado) {
-    const sessaoAtual = localStorage.getItem(CHAVE_SESSAO);
-    const parametro = encodeURIComponent(sessaoAtual);
-    linkCadastros.href = `../cadastros/index.html?sessao=${parametro}`;
-    linkEstoque.href = `../estoque/index.html?sessao=${parametro}`;
-    linkPromocoes.href = `../promocoes/index.html?sessao=${parametro}`;
-    linkLoja.href = `../loja/index.html?sessao=${parametro}`;
-}
 
 const statTotal = document.getElementById("stat-total");
 const statCompradores = document.getElementById("stat-compradores");
@@ -55,12 +55,7 @@ let termoBusca = "";
 let ordenacaoAtual = "compras";
 
 function carregarUsuarios() {
-    const dados = localStorage.getItem(CHAVE_USUARIOS);
-    return dados ? JSON.parse(dados) : [];
-}
-
-function salvarUsuarios(usuarios) {
-    localStorage.setItem(CHAVE_USUARIOS, JSON.stringify(usuarios));
+    return apiFetch("/api/usuarios");
 }
 
 function mascararCpf(valor) {
@@ -129,8 +124,8 @@ function ordenarLista(usuarios) {
     return copia;
 }
 
-function renderizarUsuarios() {
-    const usuarios = carregarUsuarios();
+async function renderizarUsuarios() {
+    const usuarios = await carregarUsuarios();
 
     statTotal.textContent = usuarios.length;
     statCompradores.textContent = usuarios.filter((usuario) => (usuario.comprasRealizadas || 0) > 0).length;
@@ -264,33 +259,30 @@ if (autorizado) {
         campoNovoCpf.value = mascararCpf(campoNovoCpf.value);
     });
 
-    listaUsuarios.addEventListener("click", (evento) => {
+    listaUsuarios.addEventListener("click", async (evento) => {
         const botao = evento.target.closest(".editar-usuario");
         if (!botao) return;
 
-        const usuarios = carregarUsuarios();
-        const usuario = usuarios.find((item) => item.id === botao.dataset.id);
+        const usuarios = await carregarUsuarios();
+        const usuario = usuarios.find((item) => item.id === Number(botao.dataset.id));
         if (!usuario) return;
 
         abrirFormEdicaoUsuario(usuario);
     });
 
-    formCriarUsuario.addEventListener("submit", (evento) => {
+    formCriarUsuario.addEventListener("submit", async (evento) => {
         evento.preventDefault();
         mensagemCriarUsuario.hidden = true;
 
         const id = campoUsuarioId.value;
         const editando = Boolean(id);
 
-        const usuarios = carregarUsuarios();
-        const usuarioExistente = editando ? usuarios.find((item) => item.id === id) : null;
-        const ehContaEmpresa = Boolean(usuarioExistente && usuarioExistente.cnpj);
-
         const nome = document.getElementById("novo-nome").value.trim();
         const email = document.getElementById("novo-email").value.trim().toLowerCase();
         const cpf = campoNovoCpf.value.replace(/\D/g, "");
         const senha = campoNovoSenha.value;
         const papel = campoNovoPapel.value;
+        const ehContaEmpresa = campoNovoCpf.disabled;
 
         if (!nome || !email || (!ehContaEmpresa && !cpf) || (!editando && !senha)) {
             mostrarMensagemCriarUsuario("Preencha todos os campos.", "erro");
@@ -307,48 +299,26 @@ if (autorizado) {
             return;
         }
 
-        if (usuarios.some((usuario) => usuario.id !== id && usuario.email.toLowerCase() === email)) {
-            mostrarMensagemCriarUsuario("Já existe um usuário com esse e-mail.", "erro");
-            return;
-        }
-
-        if (!ehContaEmpresa && usuarios.some((usuario) => usuario.id !== id && usuario.cpf === cpf)) {
-            mostrarMensagemCriarUsuario("Já existe um usuário com esse CPF.", "erro");
-            return;
-        }
-
-        if (editando) {
-            const usuario = usuarioExistente;
-            if (!usuario) {
-                mostrarMensagemCriarUsuario("Usuário não encontrado.", "erro");
-                return;
+        try {
+            if (editando) {
+                await apiFetch(`/api/usuarios/${id}`, {
+                    method: "PUT",
+                    body: JSON.stringify({ nome, email, cpf, senha, papel }),
+                });
+                mostrarMensagemCriarUsuario("Usuário atualizado com sucesso!", "sucesso");
+            } else {
+                await apiFetch("/api/usuarios", {
+                    method: "POST",
+                    body: JSON.stringify({ nome, email, cpf, senha, papel }),
+                });
+                mostrarMensagemCriarUsuario("Usuário criado com sucesso!", "sucesso");
             }
-            usuario.nome = nome;
-            usuario.email = email;
-            if (!ehContaEmpresa) usuario.cpf = cpf;
-            usuario.papel = papel;
-            if (senha) usuario.senha = senha;
 
-            salvarUsuarios(usuarios);
-            mostrarMensagemCriarUsuario("Usuário atualizado com sucesso!", "sucesso");
-        } else {
-            usuarios.push({
-                id: Date.now().toString(),
-                nome,
-                email,
-                cpf,
-                senha,
-                papel,
-                comprasRealizadas: 0,
-                totalGasto: 0,
-            });
-
-            salvarUsuarios(usuarios);
-            mostrarMensagemCriarUsuario("Usuário criado com sucesso!", "sucesso");
+            await renderizarUsuarios();
+            setTimeout(fecharFormUsuario, 1200);
+        } catch (erro) {
+            mostrarMensagemCriarUsuario(erro.message, "erro");
         }
-
-        renderizarUsuarios();
-        setTimeout(fecharFormUsuario, 1200);
     });
 
     renderizarUsuarios();

@@ -1,8 +1,42 @@
-const CHAVE_PRODUTOS = "estoque-produtos";
+const CHAVE_TOKEN = "wgstore_token";
 const CHAVE_CARRINHO = "loja-carrinho";
-const CHAVE_SESSAO = "loja-usuario-logado";
-const CHAVE_USUARIOS = "loja-usuarios";
 const LIMIAR_ESTOQUE_BAIXO = 5;
+
+function decodificarToken(token) {
+    try {
+        const payload = token.split(".")[1];
+        const json = decodeURIComponent(
+            atob(payload.replace(/-/g, "+").replace(/_/g, "/"))
+                .split("")
+                .map((c) => "%" + c.charCodeAt(0).toString(16).padStart(2, "0"))
+                .join("")
+        );
+        return JSON.parse(json);
+    } catch (erro) {
+        return null;
+    }
+}
+
+function carregarSessao() {
+    const token = localStorage.getItem(CHAVE_TOKEN);
+    if (!token) return null;
+    const payload = decodificarToken(token);
+    if (!payload) return null;
+    return { id: payload.id, nome: payload.nome, email: payload.email, papel: payload.papel, token };
+}
+
+async function apiFetch(caminho, opcoes) {
+    const sessao = carregarSessao();
+    const cabecalhos = Object.assign({ "Content-Type": "application/json" }, (opcoes && opcoes.headers) || {});
+    if (sessao) cabecalhos.Authorization = `Bearer ${sessao.token}`;
+
+    const resposta = await fetch(caminho, { ...opcoes, headers: cabecalhos });
+    const dados = await resposta.json().catch(() => ({}));
+    if (!resposta.ok) {
+        throw new Error(dados.erro || "Erro inesperado. Tente novamente.");
+    }
+    return dados;
+}
 
 const contaLogada = document.getElementById("conta-logada");
 const contaNome = document.getElementById("conta-nome");
@@ -42,12 +76,7 @@ const iconeProduto = `
 let toastTimeout = null;
 
 function carregarProdutos() {
-    const dados = localStorage.getItem(CHAVE_PRODUTOS);
-    return dados ? JSON.parse(dados) : [];
-}
-
-function salvarProdutos(produtos) {
-    localStorage.setItem(CHAVE_PRODUTOS, JSON.stringify(produtos));
+    return apiFetch("/api/produtos");
 }
 
 function carregarCarrinho() {
@@ -99,12 +128,12 @@ function quantidadeNoCarrinho(id, carrinho) {
 
 function obterIdProdutoDaUrl() {
     const parametros = new URLSearchParams(window.location.search);
-    return parametros.get("id");
+    return Number(parametros.get("id"));
 }
 
-function renderizarProdutoDetalhe() {
+async function renderizarProdutoDetalhe() {
     const produtoId = obterIdProdutoDaUrl();
-    const produtos = carregarProdutos();
+    const produtos = await carregarProdutos();
     const produto = produtos.find((item) => item.id === produtoId);
 
     if (!produto) {
@@ -183,9 +212,9 @@ function calcularSimilaridade(produtoAtual, produto) {
     return pontuacao;
 }
 
-function renderizarRelacionados() {
+async function renderizarRelacionados() {
     const produtoId = obterIdProdutoDaUrl();
-    const todosProdutos = carregarProdutos();
+    const todosProdutos = await carregarProdutos();
     const produtoAtual = todosProdutos.find((produto) => produto.id === produtoId);
     const produtos = todosProdutos.filter((produto) => produto.id !== produtoId);
 
@@ -214,8 +243,8 @@ function renderizarRelacionados() {
     }).join("");
 }
 
-function renderizarCarrinho() {
-    const produtos = carregarProdutos();
+async function renderizarCarrinho() {
+    const produtos = await carregarProdutos();
     const produtosPorId = new Map(produtos.map((produto) => [produto.id, produto]));
     let carrinho = carregarCarrinho();
 
@@ -262,41 +291,6 @@ function renderizarCarrinho() {
     carrinhoTotalValor.textContent = formatarPreco(total);
 }
 
-function importarSessaoDaUrl() {
-    const parametros = new URLSearchParams(window.location.search);
-    const sessaoCodificada = parametros.get("sessao");
-    if (!sessaoCodificada) return;
-
-    localStorage.setItem(CHAVE_SESSAO, sessaoCodificada);
-    parametros.delete("sessao");
-    const query = parametros.toString();
-    window.history.replaceState({}, "", window.location.pathname + (query ? `?${query}` : ""));
-}
-
-function carregarSessao() {
-    const dados = localStorage.getItem(CHAVE_SESSAO);
-    return dados ? JSON.parse(dados) : null;
-}
-
-function carregarUsuarios() {
-    const dados = localStorage.getItem(CHAVE_USUARIOS);
-    return dados ? JSON.parse(dados) : [];
-}
-
-function salvarUsuarios(usuarios) {
-    localStorage.setItem(CHAVE_USUARIOS, JSON.stringify(usuarios));
-}
-
-function registrarCompraUsuario(usuarioId, totalPedido) {
-    const usuarios = carregarUsuarios();
-    const usuario = usuarios.find((item) => item.id === usuarioId);
-    if (!usuario) return;
-
-    usuario.comprasRealizadas = (usuario.comprasRealizadas || 0) + 1;
-    usuario.totalGasto = (usuario.totalGasto || 0) + totalPedido;
-    salvarUsuarios(usuarios);
-}
-
 function fecharMenuConta() {
     contaMenu.hidden = true;
     contaLogada.classList.remove("aberta");
@@ -317,20 +311,6 @@ function renderizarConta() {
     linkUsuariosMenu.hidden = !ehAdmin;
     linkPromocoesMenu.hidden = !ehAdmin;
     linkCadastrosMenu.hidden = !ehAdmin;
-
-    if (ehAdmin || ehVendedor) {
-        const dados = localStorage.getItem(CHAVE_SESSAO);
-        const parametro = encodeURIComponent(dados);
-        linkEstoqueMenu.href = `../estoque/index.html?sessao=${parametro}`;
-    }
-
-    if (ehAdmin) {
-        const dados = localStorage.getItem(CHAVE_SESSAO);
-        const parametro = encodeURIComponent(dados);
-        linkUsuariosMenu.href = `../usuarios/index.html?sessao=${parametro}`;
-        linkPromocoesMenu.href = `../promocoes/index.html?sessao=${parametro}`;
-        linkCadastrosMenu.href = `../cadastros/index.html?sessao=${parametro}`;
-    }
 }
 
 btnContaMenu.addEventListener("click", (evento) => {
@@ -351,7 +331,7 @@ document.addEventListener("click", (evento) => {
 });
 
 btnSair.addEventListener("click", () => {
-    localStorage.removeItem(CHAVE_SESSAO);
+    localStorage.removeItem(CHAVE_TOKEN);
     renderizarConta();
     mostrarToast("Você saiu da sua conta.");
 });
@@ -366,9 +346,9 @@ function fecharCarrinho() {
     overlay.classList.remove("aberto");
 }
 
-function adicionarProdutoAtualAoCarrinho() {
+async function adicionarProdutoAtualAoCarrinho() {
     const produtoId = obterIdProdutoDaUrl();
-    const produtos = carregarProdutos();
+    const produtos = await carregarProdutos();
     const produto = produtos.find((item) => item.id === produtoId);
     if (!produto) return null;
 
@@ -392,36 +372,36 @@ function adicionarProdutoAtualAoCarrinho() {
     return produto;
 }
 
-produtoDetalhe.addEventListener("click", (evento) => {
+produtoDetalhe.addEventListener("click", async (evento) => {
     if (evento.target.closest("#detalhe-btn-add")) {
-        const produto = adicionarProdutoAtualAoCarrinho();
+        const produto = await adicionarProdutoAtualAoCarrinho();
         if (!produto) return;
-        renderizarProdutoDetalhe();
-        renderizarCarrinho();
+        await renderizarProdutoDetalhe();
+        await renderizarCarrinho();
         mostrarToast(`${produto.nome} adicionado ao carrinho.`);
         return;
     }
 
     if (evento.target.closest("#detalhe-btn-finalizar")) {
-        const produto = adicionarProdutoAtualAoCarrinho();
+        const produto = await adicionarProdutoAtualAoCarrinho();
         if (!produto) return;
-        renderizarProdutoDetalhe();
-        renderizarCarrinho();
+        await renderizarProdutoDetalhe();
+        await renderizarCarrinho();
         finalizarCompra();
     }
 });
 
-carrinhoItensEl.addEventListener("click", (evento) => {
+carrinhoItensEl.addEventListener("click", async (evento) => {
     const id = evento.target.dataset.id;
     if (!id) return;
 
     const carrinho = carregarCarrinho();
-    const item = carrinho.find((item) => item.produtoId === id);
+    const item = carrinho.find((item) => item.produtoId === Number(id));
     if (!item) return;
 
     if (evento.target.classList.contains("aumentar")) {
-        const produtos = carregarProdutos();
-        const produto = produtos.find((produto) => produto.id === id);
+        const produtos = await carregarProdutos();
+        const produto = produtos.find((produto) => produto.id === Number(id));
         if (produto && item.quantidade < produto.quantidade) {
             item.quantidade += 1;
         }
@@ -450,7 +430,7 @@ btnAbrirCarrinho.addEventListener("click", () => {
 btnFecharCarrinho.addEventListener("click", fecharCarrinho);
 overlay.addEventListener("click", fecharCarrinho);
 
-function finalizarCompra() {
+async function finalizarCompra() {
     const carrinho = carregarCarrinho();
     if (carrinho.length === 0) return;
 
@@ -463,29 +443,23 @@ function finalizarCompra() {
         return;
     }
 
-    const produtos = carregarProdutos();
-    let totalPedido = 0;
-
-    carrinho.forEach((item) => {
-        const produto = produtos.find((produto) => produto.id === item.produtoId);
-        if (!produto) return;
-        const quantidadeComprada = Math.min(item.quantidade, produto.quantidade);
-        totalPedido += quantidadeComprada * precoEfetivo(produto);
-        produto.quantidade -= quantidadeComprada;
-    });
-
-    salvarProdutos(produtos);
-    registrarCompraUsuario(usuario.id, totalPedido);
-    salvarCarrinho([]);
-    renderizarProdutoDetalhe();
-    renderizarCarrinho();
-    fecharCarrinho();
-    mostrarToast("Pedido realizado com sucesso!");
+    btnFinalizar.disabled = true;
+    try {
+        const itens = carrinho.map((item) => ({ produtoId: Number(item.produtoId), quantidade: item.quantidade }));
+        await apiFetch("/api/pedidos", { method: "POST", body: JSON.stringify({ itens }) });
+        salvarCarrinho([]);
+        await renderizarProdutoDetalhe();
+        await renderizarCarrinho();
+        fecharCarrinho();
+        mostrarToast("Pedido realizado com sucesso!");
+    } catch (erro) {
+        mostrarToast(erro.message);
+        btnFinalizar.disabled = false;
+    }
 }
 
 btnFinalizar.addEventListener("click", finalizarCompra);
 
-importarSessaoDaUrl();
 renderizarProdutoDetalhe();
 renderizarRelacionados();
 renderizarCarrinho();

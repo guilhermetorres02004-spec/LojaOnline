@@ -1,18 +1,25 @@
 :root {
-    --bg: #f4f5f7;
+    --bg: #f6f6f3;
     --surface: #ffffff;
-    --border: #e5e7eb;
-    --text: #1f2430;
-    --text-muted: #6b7280;
-    --primary: #4f46e5;
-    --primary-hover: #4338ca;
-    --primary-soft: #eef2ff;
-    --danger: #dc2626;
-    --danger-soft: #fef2f2;
-    --success: #16a34a;
-    --success-soft: #f0fdf4;
-    --radius: 12px;
-    --shadow: 0 1px 2px rgba(16, 24, 40, 0.04), 0 4px 12px rgba(16, 24, 40, 0.06);
+    --surface-alt: #f0efe9;
+    --border: #e3e1da;
+    --border-strong: #d2cfc5;
+    --text: #201f1d;
+    --text-muted: #6c6a62;
+    --text-faint: #a29e94;
+    --primary: #2f3168;
+    --primary-hover: #23254f;
+    --primary-soft: #ececf4;
+    --danger: #a8362b;
+    --danger-soft: #f8e9e6;
+    --success: #1f7a52;
+    --success-soft: #e6f2ec;
+    --radius: 16px;
+    --radius-sm: 10px;
+    --font-display: "Fraunces", Georgia, serif;
+    --shadow-sm: 0 1px 2px rgba(32, 31, 29, 0.05);
+    --shadow: 0 4px 10px rgba(32, 31, 29, 0.05), 0 14px 32px rgba(32, 31, 29, 0.07);
+    --shadow-lg: 0 20px 48px rgba(32, 31, 29, 0.16);
 }
 
 * {
@@ -26,17 +33,21 @@
 body {
     font-family: "Inter", Arial, Helvetica, sans-serif;
     background-color: var(--bg);
+    background-image: radial-gradient(ellipse 900px 600px at 50% -10%, var(--primary-soft), transparent);
     color: var(--text);
     margin: 0;
+    min-height: 100vh;
     -webkit-font-smoothing: antialiased;
 }
 
 .app {
     max-width: 420px;
+    min-height: 100vh;
     margin: 0 auto;
     padding: 2.5rem 1.5rem 4rem;
     display: flex;
     flex-direction: column;
+    justify-content: center;
     gap: 1.2rem;
 }
 
@@ -94,6 +105,7 @@ body {
 
 .brand h1 {
     font-size: 1.2rem;
+    font-family: var(--font-display);
     font-weight: 700;
     margin: 0;
     letter-spacing: -0.01em;
@@ -116,14 +128,15 @@ body {
 
 .aba {
     flex: 1;
-    padding: 0.55rem 0.4rem;
+    padding: 0.55rem 0.3rem;
     border: none;
     border-radius: 8px;
     background: transparent;
     color: var(--text-muted);
     font-family: inherit;
-    font-size: 0.78rem;
+    font-size: 0.72rem;
     font-weight: 600;
+    white-space: nowrap;
     cursor: pointer;
     transition: background-color 0.15s ease, color 0.15s ease;
 }
@@ -194,14 +207,14 @@ body {
 
 .btn {
     width: 100%;
-    padding: 0.7rem 1.1rem;
+    padding: 0.75rem 1.1rem;
     border: none;
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
     font-size: 0.95rem;
     font-weight: 600;
     font-family: inherit;
     cursor: pointer;
-    transition: background-color 0.15s ease, transform 0.05s ease;
+    transition: background-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
     margin-top: 0.3rem;
 }
 
@@ -212,8 +225,11 @@ body {
 .btn-primary {
     background-color: var(--primary);
     color: #fff;
+    box-shadow: var(--shadow-sm);
 }
 
 .btn-primary:hover {
     background-color: var(--primary-hover);
+    box-shadow: var(--shadow);
+    transform: translateY(-1px);
 }

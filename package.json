@@ -1,0 +1,18 @@
+{
+  "name": "wgstore",
+  "version": "1.0.0",
+  "description": "Sistema de loja online WGStore (estoque, loja, usuarios, promocoes, cadastros)",
+  "private": true,
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js",
+    "seed": "node server/seed.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "jsonwebtoken": "^9.0.2",
+    "pg": "^8.12.0"
+  }
+}

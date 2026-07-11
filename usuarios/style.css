@@ -1,18 +1,25 @@
 :root {
-    --bg: #f4f5f7;
+    --bg: #f6f6f3;
     --surface: #ffffff;
-    --border: #e5e7eb;
-    --text: #1f2430;
-    --text-muted: #6b7280;
-    --primary: #4f46e5;
-    --primary-hover: #4338ca;
-    --primary-soft: #eef2ff;
-    --danger: #dc2626;
-    --danger-soft: #fef2f2;
-    --success: #16a34a;
-    --success-soft: #f0fdf4;
-    --radius: 12px;
-    --shadow: 0 1px 2px rgba(16, 24, 40, 0.04), 0 4px 12px rgba(16, 24, 40, 0.06);
+    --surface-alt: #f0efe9;
+    --border: #e3e1da;
+    --border-strong: #d2cfc5;
+    --text: #201f1d;
+    --text-muted: #6c6a62;
+    --text-faint: #a29e94;
+    --primary: #2f3168;
+    --primary-hover: #23254f;
+    --primary-soft: #ececf4;
+    --danger: #a8362b;
+    --danger-soft: #f8e9e6;
+    --success: #1f7a52;
+    --success-soft: #e6f2ec;
+    --radius: 16px;
+    --radius-sm: 10px;
+    --font-display: "Fraunces", Georgia, serif;
+    --shadow-sm: 0 1px 2px rgba(32, 31, 29, 0.05);
+    --shadow: 0 4px 10px rgba(32, 31, 29, 0.05), 0 14px 32px rgba(32, 31, 29, 0.07);
+    --shadow-lg: 0 20px 48px rgba(32, 31, 29, 0.16);
 }
 
 * {
@@ -73,6 +80,7 @@ body {
 
 .brand h1 {
     font-size: 1.4rem;
+    font-family: var(--font-display);
     font-weight: 700;
     margin: 0;
     letter-spacing: -0.01em;
@@ -361,6 +369,7 @@ tbody tr:hover {
 
 .nome-usuario {
     font-weight: 600;
+    min-width: 170px;
 }
 
 .papel-badge {
@@ -369,7 +378,7 @@ tbody tr:hover {
     border-radius: 999px;
     font-size: 0.78rem;
     font-weight: 600;
-    background-color: #f3f4f6;
+    background-color: var(--surface-alt);
     color: var(--text-muted);
 }
 
@@ -379,8 +388,8 @@ tbody tr:hover {
 }
 
 .papel-badge.vendedor {
-    background-color: #fef3c7;
-    color: #b45309;
+    background-color: #f4e8d0;
+    color: #8a5a1f;
 }
 
 .compras-destaque {
@@ -421,7 +430,7 @@ tbody tr:hover {
 .vazio svg {
     width: 40px;
     height: 40px;
-    color: #c7cad1;
+    color: var(--text-faint);
     margin-bottom: 0.8rem;
 }
 
@@ -458,20 +467,27 @@ tbody tr:hover {
 
 .btn {
     border: none;
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
     font-family: inherit;
     cursor: pointer;
     font-weight: 600;
-    transition: background-color 0.15s ease, transform 0.05s ease;
+    transition: background-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.btn:active {
+    transform: translateY(1px);
 }
 
 .btn-primary {
     background-color: var(--primary);
     color: #fff;
+    box-shadow: var(--shadow-sm);
 }
 
 .btn-primary:hover {
     background-color: var(--primary-hover);
+    box-shadow: var(--shadow);
+    transform: translateY(-1px);
 }
 
 .acesso-negado .btn {

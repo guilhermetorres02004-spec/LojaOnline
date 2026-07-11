@@ -1,40 +1,46 @@
-const CHAVE_PRODUTOS = "estoque-produtos";
-const CHAVE_SESSAO = "loja-usuario-logado";
+const CHAVE_TOKEN = "wgstore_token";
 const PROMOCAO_MAXIMA = 90;
 
-function importarSessaoDaUrl() {
-    const parametros = new URLSearchParams(window.location.search);
-    const sessaoCodificada = parametros.get("sessao");
-    if (!sessaoCodificada) return;
-
-    localStorage.setItem(CHAVE_SESSAO, sessaoCodificada);
-    parametros.delete("sessao");
-    const query = parametros.toString();
-    window.history.replaceState({}, "", window.location.pathname + (query ? `?${query}` : ""));
-}
-
-function usuarioEhAdmin() {
-    const dados = localStorage.getItem(CHAVE_SESSAO);
-    if (!dados) return false;
+function decodificarToken(token) {
     try {
-        return JSON.parse(dados).papel === "admin";
+        const payload = token.split(".")[1];
+        const json = decodeURIComponent(
+            atob(payload.replace(/-/g, "+").replace(/_/g, "/"))
+                .split("")
+                .map((c) => "%" + c.charCodeAt(0).toString(16).padStart(2, "0"))
+                .join("")
+        );
+        return JSON.parse(json);
     } catch (erro) {
-        return false;
+        return null;
     }
 }
 
-importarSessaoDaUrl();
-const autorizado = usuarioEhAdmin();
+function carregarSessao() {
+    const token = localStorage.getItem(CHAVE_TOKEN);
+    if (!token) return null;
+    const payload = decodificarToken(token);
+    if (!payload) return null;
+    return { id: payload.id, nome: payload.nome, email: payload.email, papel: payload.papel, token };
+}
+
+async function apiFetch(caminho, opcoes) {
+    const sessao = carregarSessao();
+    const cabecalhos = Object.assign({ "Content-Type": "application/json" }, (opcoes && opcoes.headers) || {});
+    if (sessao) cabecalhos.Authorization = `Bearer ${sessao.token}`;
+
+    const resposta = await fetch(caminho, { ...opcoes, headers: cabecalhos });
+    const dados = await resposta.json().catch(() => ({}));
+    if (!resposta.ok) {
+        throw new Error(dados.erro || "Erro inesperado. Tente novamente.");
+    }
+    return dados;
+}
+
+const sessaoUsuario = carregarSessao();
+const autorizado = Boolean(sessaoUsuario && sessaoUsuario.papel === "admin");
 document.getElementById("app-promocoes").hidden = !autorizado;
 document.getElementById("acesso-negado").hidden = autorizado;
-
-if (autorizado) {
-    const sessaoAtual = localStorage.getItem(CHAVE_SESSAO);
-    const parametro = encodeURIComponent(sessaoAtual);
-    document.getElementById("link-cadastros").href = `../cadastros/index.html?sessao=${parametro}`;
-    document.getElementById("link-estoque").href = `../estoque/index.html?sessao=${parametro}`;
-    document.getElementById("link-usuarios").href = `../usuarios/index.html?sessao=${parametro}`;
-}
 
 const buscaProduto = document.getElementById("busca-produto");
 const contadorProdutos = document.getElementById("contador-produtos");
@@ -55,12 +61,7 @@ let termoBusca = "";
 let toastTimeout = null;
 
 function carregarProdutos() {
-    const dados = localStorage.getItem(CHAVE_PRODUTOS);
-    return dados ? JSON.parse(dados) : [];
-}
-
-function salvarProdutos(produtos) {
-    localStorage.setItem(CHAVE_PRODUTOS, JSON.stringify(produtos));
+    return apiFetch("/api/produtos");
 }
 
 function formatarPreco(valor) {
@@ -103,8 +104,8 @@ function precoComDescontoHtml(produto) {
     return `<span class="preco-riscado">${formatarPreco(produto.preco)}</span><span class="preco-promocional">${formatarPreco(precoFinal)}</span>`;
 }
 
-function abrirFormPromocao() {
-    const produtos = carregarProdutos();
+async function abrirFormPromocao() {
+    const produtos = await carregarProdutos();
     campoPromoProduto.innerHTML = `<option value="">Selecione um produto</option>` + produtos.map((produto) =>
         `<option value="${produto.id}">${produto.nome}</option>`
     ).join("");
@@ -123,8 +124,8 @@ function fecharFormPromocao() {
     btnAbrirFormPromocao.hidden = false;
 }
 
-function renderizarPromocoes() {
-    const produtos = carregarProdutos();
+async function renderizarPromocoes() {
+    const produtos = await carregarProdutos();
 
     const termo = termoBusca.trim().toLowerCase();
     const filtrados = termo
@@ -175,7 +176,7 @@ if (autorizado) {
     btnAbrirFormPromocao.addEventListener("click", abrirFormPromocao);
     btnCancelarPromocao.addEventListener("click", fecharFormPromocao);
 
-    formPromocao.addEventListener("submit", (evento) => {
+    formPromocao.addEventListener("submit", async (evento) => {
         evento.preventDefault();
         mensagemPromocao.hidden = true;
 
@@ -203,36 +204,31 @@ if (autorizado) {
             return;
         }
 
-        const produtos = carregarProdutos();
-        const produto = produtos.find((item) => item.id === produtoId);
-        if (!produto) {
-            mostrarMensagemPromocao("Produto não encontrado.", "erro");
-            return;
+        try {
+            await apiFetch(`/api/produtos/${produtoId}/promocao`, {
+                method: "PUT",
+                body: JSON.stringify({ promocao: percentual, promocaoValidade: validade }),
+            });
+            await renderizarPromocoes();
+
+            const nomeProduto = campoPromoProduto.selectedOptions[0].textContent;
+            mostrarMensagemPromocao(`Promoção aplicada em ${nomeProduto}!`, "sucesso");
+            setTimeout(fecharFormPromocao, 1200);
+        } catch (erro) {
+            mostrarMensagemPromocao(erro.message, "erro");
         }
-
-        produto.promocao = percentual;
-        produto.promocaoValidade = validade;
-        salvarProdutos(produtos);
-        renderizarPromocoes();
-
-        mostrarMensagemPromocao(`Promoção aplicada em ${produto.nome}!`, "sucesso");
-        setTimeout(fecharFormPromocao, 1200);
     });
 
-    listaPromocoes.addEventListener("click", (evento) => {
+    listaPromocoes.addEventListener("click", async (evento) => {
         const botao = evento.target.closest(".remover-promocao");
         if (!botao) return;
 
         const id = botao.dataset.id;
-        const produtos = carregarProdutos();
-        const produto = produtos.find((item) => item.id === id);
-        if (!produto) return;
+        const nomeProduto = botao.closest("tr").querySelector(".nome-produto").textContent;
 
-        produto.promocao = 0;
-        produto.promocaoValidade = "";
-        salvarProdutos(produtos);
-        renderizarPromocoes();
-        mostrarToast(`Promoção de ${produto.nome} removida.`);
+        await apiFetch(`/api/produtos/${id}/promocao`, { method: "DELETE" });
+        await renderizarPromocoes();
+        mostrarToast(`Promoção de ${nomeProduto} removida.`);
     });
 
     renderizarPromocoes();
