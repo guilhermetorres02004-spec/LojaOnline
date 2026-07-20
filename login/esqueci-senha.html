@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recuperar senha</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app">
+        <a href="index.html" class="link-loja">&larr; Voltar para o login</a>
+
+        <section class="card auth-card">
+            <div class="brand">
+                <span class="brand-icon brand-icon-letra">W</span>
+                <div>
+                    <h1>Recuperar senha</h1>
+                    <p>Informe seu e-mail para gerar um link de redefinição</p>
+                </div>
+            </div>
+
+            <p class="mensagem" id="mensagem" hidden></p>
+
+            <form id="form-esqueci-senha" class="form-auth" novalidate>
+                <div class="campo">
+                    <label for="email">E-mail</label>
+                    <input type="email" id="email" placeholder="voce@email.com" required>
+                </div>
+
+                <button type="submit" class="btn btn-primary">Gerar link de recuperação</button>
+            </form>
+
+            <div class="link-recuperacao-caixa" id="link-recuperacao-caixa" hidden>
+                <p class="ajuda">Como este é um ambiente local (sem envio de e-mail), aqui está o seu link. Copie e abra-o para redefinir a senha:</p>
+                <a href="#" id="link-recuperacao" class="link-recuperacao-valor"></a>
+            </div>
+        </section>
+    </div>
+
+    <script src="esqueci-senha.js"></script>
+</body>
+</html>

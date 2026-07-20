@@ -13,6 +13,7 @@ app.use("/api/produtos", require("./routes/produtos"));
 app.use("/api/usuarios", require("./routes/usuarios"));
 app.use("/api/cadastros", require("./routes/cadastros"));
 app.use("/api/pedidos", require("./routes/pedidos"));
+app.use("/api/suporte", require("./routes/suporte"));
 
 app.use(express.static(RAIZ));
 

@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pedidos recebidos</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app" id="app-pedidos">
+        <header class="topbar">
+            <div class="brand">
+                <span class="brand-icon">
+                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M4 7L12 3L20 7V17L12 21L4 17V7Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+                        <path d="M4 7L12 11L20 7" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+                        <path d="M12 11V21" stroke="currentColor" stroke-width="1.6"/>
+                    </svg>
+                </span>
+                <div>
+                    <h1>Pedidos recebidos</h1>
+                    <p>Acompanhe e atualize a entrega dos seus produtos</p>
+                </div>
+            </div>
+            <nav class="topbar-nav">
+                <a href="../cadastros/index.html" id="link-cadastros" class="link-loja" hidden>Cadastros</a>
+                <a href="../estoque/index.html" id="link-estoque" class="link-loja">Estoque</a>
+                <a href="../usuarios/index.html" id="link-usuarios" class="link-loja" hidden>Usuários</a>
+                <a href="../promocoes/index.html" id="link-promocoes" class="link-loja" hidden>Promoções</a>
+                <a href="../suporte/index.html" id="link-suporte" class="link-loja" hidden>Suporte</a>
+                <a href="../loja/index.html" class="link-loja">Ver loja</a>
+            </nav>
+        </header>
+
+        <main class="content">
+            <section class="card">
+                <div class="table-header">
+                    <h2>Itens para processar</h2>
+                    <span class="badge" id="contador-pedidos">0</span>
+                </div>
+
+                <div id="lista-pedidos"></div>
+
+                <div class="vazio" id="vazio-pedidos" hidden>
+                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M4 7L12 3L20 7V17L12 21L4 17V7Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
+                        <path d="M4 7L12 11L20 7" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
+                        <path d="M12 11V21" stroke="currentColor" stroke-width="1.4"/>
+                    </svg>
+                    <p>Nenhum pedido recebido ainda.</p>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <div class="acesso-negado" id="acesso-negado" hidden>
+        <section class="card">
+            <h2>Acesso restrito</h2>
+            <p>Esta área é exclusiva para administradores e vendedores.</p>
+            <a href="../loja/index.html" class="btn btn-primary">Voltar para a loja</a>
+        </section>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script src="script.js"></script>
+</body>
+</html>

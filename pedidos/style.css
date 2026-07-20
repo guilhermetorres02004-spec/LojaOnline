@@ -39,7 +39,7 @@ body {
 }
 
 .app {
-    max-width: 1100px;
+    max-width: 900px;
     margin: 0 auto;
     padding: 2.5rem 1.5rem 4rem;
 }
@@ -95,12 +95,10 @@ body {
 .topbar-nav {
     display: flex;
     gap: 0.7rem;
+    flex-wrap: wrap;
 }
 
 .link-loja {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.35rem;
     font-size: 0.85rem;
     font-weight: 600;
     color: var(--primary);
@@ -113,26 +111,12 @@ body {
     transition: background-color 0.15s ease, border-color 0.15s ease;
 }
 
-.badge-pedidos {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 18px;
-    height: 18px;
-    padding: 0 0.3rem;
-    border-radius: 999px;
-    background-color: var(--danger);
-    color: #fff;
-    font-size: 0.68rem;
-    font-weight: 700;
-}
-
 .link-loja:hover {
     background-color: var(--primary-soft);
     border-color: var(--primary);
 }
 
-/* Card / table */
+/* Card */
 
 .card {
     background-color: var(--surface);
@@ -167,73 +151,193 @@ body {
     white-space: nowrap;
 }
 
-.table-wrapper {
-    overflow-x: auto;
+/* Item de pedido */
+
+.item-pedido-card {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 1.1rem 1.3rem;
+    margin-bottom: 1rem;
 }
 
-table {
-    width: 100%;
-    border-collapse: collapse;
+.item-pedido-card:last-child {
+    margin-bottom: 0;
 }
 
-th {
-    text-align: left;
+.item-pedido-topo {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 0.5rem;
+}
+
+.item-pedido-produto {
+    font-weight: 700;
+    display: block;
+}
+
+.item-pedido-marca {
     font-size: 0.78rem;
-    font-weight: 600;
     color: var(--text-muted);
     text-transform: uppercase;
-    letter-spacing: 0.04em;
-    padding: 0 0.6rem 0.7rem;
-    border-bottom: 1px solid var(--border);
+    letter-spacing: 0.03em;
 }
 
-td {
-    padding: 0.85rem 0.6rem;
-    border-bottom: 1px solid var(--border);
-    font-size: 0.9rem;
-}
-
-tbody tr:last-child td {
-    border-bottom: none;
-}
-
-tbody tr:hover {
-    background-color: var(--bg);
-}
-
-.nome-empresa {
-    font-weight: 600;
-    min-width: 150px;
-}
-
-.acoes-cadastro {
-    display: flex;
-    gap: 0.5rem;
-    justify-content: flex-end;
-}
-
-.acao-btn {
-    padding: 0.4rem 0.75rem;
-    font-size: 0.8rem;
-    font-weight: 600;
-    border: 1px solid var(--border);
-    border-radius: 7px;
-    background-color: var(--surface);
+.item-pedido-qtd {
     color: var(--text-muted);
+    font-size: 0.85rem;
+}
+
+.item-pedido-valor {
+    font-weight: 700;
+    color: var(--primary);
+    white-space: nowrap;
+}
+
+.item-pedido-comprador,
+.item-pedido-endereco {
+    margin: 0 0 0.3rem;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+
+.item-pedido-comprador strong,
+.item-pedido-endereco strong {
+    color: var(--text);
+    font-weight: 600;
+}
+
+/* Stepper de status (leitura) */
+
+.pedido-status {
+    display: flex;
+    align-items: flex-start;
+    margin: 1rem 0;
+}
+
+.pedido-etapa {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    text-align: center;
+}
+
+.pedido-etapa::before {
+    content: "";
+    position: absolute;
+    top: 6px;
+    left: -50%;
+    width: 100%;
+    height: 2px;
+    background-color: var(--border);
+    z-index: 0;
+}
+
+.pedido-etapa:first-child::before {
+    display: none;
+}
+
+.pedido-etapa.concluida::before {
+    background-color: var(--primary);
+}
+
+.pedido-etapa-ponto {
+    width: 14px;
+    height: 14px;
+    border-radius: 999px;
+    background-color: var(--border);
+    z-index: 1;
+    margin-bottom: 0.4rem;
+}
+
+.pedido-etapa.concluida .pedido-etapa-ponto {
+    background-color: var(--primary);
+}
+
+.pedido-etapa-rotulo {
+    font-size: 0.75rem;
+    color: var(--text-faint);
+}
+
+.pedido-etapa.concluida .pedido-etapa-rotulo {
+    color: var(--text-muted);
+}
+
+.pedido-etapa.atual .pedido-etapa-rotulo {
+    color: var(--primary);
+    font-weight: 600;
+}
+
+/* Ações */
+
+.item-pedido-acoes {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding-top: 0.9rem;
+    border-top: 1px solid var(--border);
+}
+
+.item-pedido-acoes select {
+    flex: 1;
+    padding: 0.55rem 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-family: inherit;
+    font-size: 0.88rem;
+    color: var(--text);
+    background-color: var(--surface);
+}
+
+.item-pedido-acoes select:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px var(--primary-soft);
+}
+
+.item-pedido-acoes .btn {
+    padding: 0.55rem 1.1rem;
+    font-size: 0.88rem;
+    white-space: nowrap;
+}
+
+.item-pedido-entregue .item-pedido-acoes {
+    opacity: 0.6;
+}
+
+/* Botões */
+
+.btn {
+    border: none;
+    border-radius: var(--radius-sm);
+    font-family: inherit;
     cursor: pointer;
-    transition: all 0.15s ease;
+    font-weight: 600;
+    transition: background-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
 }
 
-.aprovar:hover {
-    border-color: var(--success);
-    color: var(--success);
-    background-color: var(--success-soft);
+.btn:active {
+    transform: translateY(1px);
 }
 
-.rejeitar:hover {
-    border-color: var(--danger);
-    color: var(--danger);
-    background-color: var(--danger-soft);
+.btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+}
+
+.btn-primary {
+    background-color: var(--primary);
+    color: #fff;
+    box-shadow: var(--shadow-sm);
+}
+
+.btn-primary:hover:not(:disabled) {
+    background-color: var(--primary-hover);
+    box-shadow: var(--shadow);
+    transform: translateY(-1px);
 }
 
 /* Empty state */
@@ -284,31 +388,6 @@ tbody tr:hover {
     margin: 0 0 1.3rem;
     color: var(--text-muted);
     font-size: 0.9rem;
-}
-
-.btn {
-    border: none;
-    border-radius: var(--radius-sm);
-    font-family: inherit;
-    cursor: pointer;
-    font-weight: 600;
-    transition: background-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
-}
-
-.btn:active {
-    transform: translateY(1px);
-}
-
-.btn-primary {
-    background-color: var(--primary);
-    color: #fff;
-    box-shadow: var(--shadow-sm);
-}
-
-.btn-primary:hover {
-    background-color: var(--primary-hover);
-    box-shadow: var(--shadow);
-    transform: translateY(-1px);
 }
 
 .acesso-negado .btn {

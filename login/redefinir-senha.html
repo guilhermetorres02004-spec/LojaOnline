@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Redefinir senha</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app">
+        <a href="index.html" class="link-loja">&larr; Voltar para o login</a>
+
+        <section class="card auth-card">
+            <div class="brand">
+                <span class="brand-icon brand-icon-letra">W</span>
+                <div>
+                    <h1>Redefinir senha</h1>
+                    <p>Escolha uma nova senha para sua conta</p>
+                </div>
+            </div>
+
+            <p class="mensagem" id="mensagem" hidden></p>
+
+            <form id="form-redefinir-senha" class="form-auth" novalidate>
+                <div class="campo">
+                    <label for="nova-senha">Nova senha</label>
+                    <input type="password" id="nova-senha" placeholder="Crie uma nova senha" minlength="4" required>
+                </div>
+
+                <div class="campo">
+                    <label for="confirmar-senha">Confirmar nova senha</label>
+                    <input type="password" id="confirmar-senha" placeholder="Repita a nova senha" minlength="4" required>
+                </div>
+
+                <button type="submit" class="btn btn-primary">Redefinir senha</button>
+            </form>
+
+            <div class="link-recuperacao-caixa" id="link-invalido" hidden>
+                <p class="ajuda">Esse link de recuperação é inválido. <a href="esqueci-senha.html">Peça um novo aqui</a>.</p>
+            </div>
+        </section>
+    </div>
+
+    <script src="redefinir-senha.js"></script>
+</body>
+</html>

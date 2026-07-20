@@ -45,10 +45,12 @@ const btnContaMenu = document.getElementById("btn-conta-menu");
 const contaMenu = document.getElementById("conta-menu");
 const btnAbrirCarrinho = document.getElementById("btn-abrir-carrinho");
 const linkEntrarMenu = document.getElementById("link-entrar-menu");
+const linkMinhaContaMenu = document.getElementById("link-minha-conta-menu");
 const linkEstoqueMenu = document.getElementById("link-estoque-menu");
 const linkUsuariosMenu = document.getElementById("link-usuarios-menu");
 const linkPromocoesMenu = document.getElementById("link-promocoes-menu");
 const linkCadastrosMenu = document.getElementById("link-cadastros-menu");
+const linkSuporteMenu = document.getElementById("link-suporte-menu");
 
 const carrosselSecao = document.querySelector(".carrossel");
 const carrosselTrilho = document.getElementById("carrossel-trilho");
@@ -385,6 +387,7 @@ function renderizarConta() {
 
     contaNome.textContent = logado ? `Olá, ${usuario.nome}` : "Minha conta";
     linkEntrarMenu.hidden = logado;
+    linkMinhaContaMenu.hidden = !logado;
     btnSair.hidden = !logado;
 
     const ehAdmin = logado && usuario.papel === "admin";
@@ -393,6 +396,7 @@ function renderizarConta() {
     linkUsuariosMenu.hidden = !ehAdmin;
     linkPromocoesMenu.hidden = !ehAdmin;
     linkCadastrosMenu.hidden = !ehAdmin;
+    linkSuporteMenu.hidden = !ehAdmin;
 }
 
 btnContaMenu.addEventListener("click", (evento) => {
@@ -510,7 +514,7 @@ btnAbrirCarrinho.addEventListener("click", () => {
 btnFecharCarrinho.addEventListener("click", fecharCarrinho);
 overlay.addEventListener("click", fecharCarrinho);
 
-btnFinalizar.addEventListener("click", async () => {
+btnFinalizar.addEventListener("click", () => {
     const carrinho = carregarCarrinho();
     if (carrinho.length === 0) return;
 
@@ -523,19 +527,7 @@ btnFinalizar.addEventListener("click", async () => {
         return;
     }
 
-    btnFinalizar.disabled = true;
-    try {
-        const itens = carrinho.map((item) => ({ produtoId: Number(item.produtoId), quantidade: item.quantidade }));
-        await apiFetch("/api/pedidos", { method: "POST", body: JSON.stringify({ itens }) });
-        salvarCarrinho([]);
-        await renderizarProdutos();
-        await renderizarCarrinho();
-        fecharCarrinho();
-        mostrarToast("Pedido realizado com sucesso!");
-    } catch (erro) {
-        mostrarToast(erro.message);
-        btnFinalizar.disabled = false;
-    }
+    window.location.href = "endereco.html";
 });
 
 renderizarProdutos();

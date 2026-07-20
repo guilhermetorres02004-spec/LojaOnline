@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Endereço de entrega - WGStore</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="../shared/chat-suporte.css">
+</head>
+<body>
+    <div class="app">
+        <header class="topbar">
+            <div class="topbar-linha">
+                <div class="brand">
+                    <span class="brand-icon brand-icon-letra">W</span>
+                    <div>
+                        <h1>WGStore</h1>
+                    </div>
+                </div>
+
+                <div class="topbar-direita">
+                    <div class="conta-logada" id="conta-logada">
+                        <button type="button" id="btn-conta-menu" class="conta-nome-btn">
+                            <span id="conta-nome">Minha conta</span>
+                            <svg class="chevron" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M6 9L12 15L18 9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </button>
+                        <div class="conta-menu" id="conta-menu" hidden>
+                            <a href="minha-conta.html" id="link-minha-conta-menu" class="conta-menu-item" hidden>Minha conta</a>
+                            <a href="../login/index.html" id="link-entrar-menu" class="conta-menu-item">Entrar</a>
+                            <a href="../estoque/index.html" id="link-estoque-menu" class="conta-menu-item" hidden>Estoque</a>
+                            <a href="../usuarios/index.html" id="link-usuarios-menu" class="conta-menu-item" hidden>Usuários</a>
+                            <a href="../promocoes/index.html" id="link-promocoes-menu" class="conta-menu-item" hidden>Promoções</a>
+                            <a href="../cadastros/index.html" id="link-cadastros-menu" class="conta-menu-item" hidden>Cadastros</a>
+                            <a href="../suporte/index.html" id="link-suporte-menu" class="conta-menu-item" hidden>Suporte</a>
+                            <button type="button" id="btn-sair" class="conta-menu-item conta-menu-sair" hidden>Sair</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="topbar-linha topbar-acoes">
+                <a href="index.html" class="link-admin">&larr; Voltar para a loja</a>
+            </div>
+        </header>
+
+        <main class="content checkout-content">
+            <div class="checkout-progresso">
+                <span class="checkout-passo ativo">1. Endereço</span>
+                <span class="checkout-passo">2. Pagamento</span>
+            </div>
+
+            <div class="checkout-grid">
+                <section class="card checkout-form-card">
+                    <h2>Endereço de entrega</h2>
+                    <form id="form-endereco">
+                        <div class="campo">
+                            <label for="endereco-destinatario">Nome do destinatário</label>
+                            <input type="text" id="endereco-destinatario" placeholder="Quem vai receber a encomenda" required>
+                        </div>
+
+                        <div class="campo">
+                            <label for="endereco-cep">CEP</label>
+                            <input type="text" id="endereco-cep" placeholder="00000-000" inputmode="numeric" required>
+                        </div>
+
+                        <div class="campo-linha">
+                            <div class="campo campo-grande">
+                                <label for="endereco-rua">Rua</label>
+                                <input type="text" id="endereco-rua" placeholder="Nome da rua" required>
+                            </div>
+                            <div class="campo">
+                                <label for="endereco-numero">Número</label>
+                                <input type="text" id="endereco-numero" placeholder="Nº" required>
+                            </div>
+                        </div>
+
+                        <div class="campo">
+                            <label for="endereco-complemento">Complemento (opcional)</label>
+                            <input type="text" id="endereco-complemento" placeholder="Apartamento, bloco, referência...">
+                        </div>
+
+                        <div class="campo-linha">
+                            <div class="campo campo-grande">
+                                <label for="endereco-bairro">Bairro</label>
+                                <input type="text" id="endereco-bairro" placeholder="Bairro" required>
+                            </div>
+                            <div class="campo">
+                                <label for="endereco-estado">UF</label>
+                                <select id="endereco-estado" required>
+                                    <option value="">UF</option>
+                                    <option>AC</option><option>AL</option><option>AP</option><option>AM</option>
+                                    <option>BA</option><option>CE</option><option>DF</option><option>ES</option>
+                                    <option>GO</option><option>MA</option><option>MT</option><option>MS</option>
+                                    <option>MG</option><option>PA</option><option>PB</option><option>PR</option>
+                                    <option>PE</option><option>PI</option><option>RJ</option><option>RN</option>
+                                    <option>RS</option><option>RO</option><option>RR</option><option>SC</option>
+                                    <option>SP</option><option>SE</option><option>TO</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="campo">
+                            <label for="endereco-cidade">Cidade</label>
+                            <input type="text" id="endereco-cidade" placeholder="Cidade" required>
+                        </div>
+
+                        <p class="mensagem" id="mensagem-endereco" hidden></p>
+
+                        <div class="botoes">
+                            <button type="submit" class="btn btn-primary">Confirmar endereço</button>
+                        </div>
+                    </form>
+                </section>
+
+                <aside class="card checkout-resumo">
+                    <h2>Resumo do pedido</h2>
+                    <div class="checkout-resumo-itens" id="resumo-itens"></div>
+                    <div class="checkout-resumo-total">
+                        <span>Total</span>
+                        <span id="resumo-total">R$ 0,00</span>
+                    </div>
+                </aside>
+            </div>
+        </main>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script src="endereco.js"></script>
+    <script src="../shared/chat-suporte.js"></script>
+</body>
+</html>

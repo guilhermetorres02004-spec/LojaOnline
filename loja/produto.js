@@ -45,10 +45,12 @@ const btnContaMenu = document.getElementById("btn-conta-menu");
 const contaMenu = document.getElementById("conta-menu");
 const btnAbrirCarrinho = document.getElementById("btn-abrir-carrinho");
 const linkEntrarMenu = document.getElementById("link-entrar-menu");
+const linkMinhaContaMenu = document.getElementById("link-minha-conta-menu");
 const linkEstoqueMenu = document.getElementById("link-estoque-menu");
 const linkUsuariosMenu = document.getElementById("link-usuarios-menu");
 const linkPromocoesMenu = document.getElementById("link-promocoes-menu");
 const linkCadastrosMenu = document.getElementById("link-cadastros-menu");
+const linkSuporteMenu = document.getElementById("link-suporte-menu");
 
 const produtoDetalhe = document.getElementById("produto-detalhe");
 const produtoNaoEncontrado = document.getElementById("produto-nao-encontrado");
@@ -95,6 +97,11 @@ function formatarPreco(valor) {
 function formatarData(dataIso) {
     const [ano, mes, dia] = dataIso.split("-");
     return `${dia}/${mes}/${ano}`;
+}
+
+function formatarDataHora(iso) {
+    const data = new Date(iso);
+    return data.toLocaleDateString("pt-br") + " às " + data.toLocaleTimeString("pt-br", { hour: "2-digit", minute: "2-digit" });
 }
 
 function promocaoAtiva(produto) {
@@ -243,6 +250,71 @@ async function renderizarRelacionados() {
     }).join("");
 }
 
+const comentariosProduto = document.getElementById("comentarios-produto");
+const comentarioLogin = document.getElementById("comentario-login");
+const formComentario = document.getElementById("form-comentario");
+const comentarioTexto = document.getElementById("comentario-texto");
+const mensagemComentario = document.getElementById("mensagem-comentario");
+const listaComentarios = document.getElementById("lista-comentarios");
+const comentariosVazio = document.getElementById("comentarios-vazio");
+
+async function renderizarComentarios() {
+    const produtoId = obterIdProdutoDaUrl();
+    const sessao = carregarSessao();
+
+    comentariosProduto.hidden = false;
+    comentarioLogin.hidden = Boolean(sessao);
+    formComentario.hidden = !sessao;
+
+    const comentarios = await apiFetch(`/api/produtos/${produtoId}/comentarios`);
+
+    comentariosVazio.hidden = comentarios.length > 0;
+    listaComentarios.innerHTML = comentarios.map((comentario) => {
+        const podeRemover = sessao && (sessao.id === comentario.usuarioId || sessao.papel === "admin");
+        return `
+            <div class="comentario-item">
+                <div class="comentario-cabecalho">
+                    <span class="comentario-autor">${comentario.autorNome}</span>
+                    <span class="comentario-data">${formatarDataHora(comentario.criadoEm)}</span>
+                </div>
+                <p class="comentario-texto">${comentario.texto.replace(/</g, "&lt;")}</p>
+                ${podeRemover ? `<button type="button" class="comentario-remover" data-id="${comentario.id}">Remover</button>` : ""}
+            </div>
+        `;
+    }).join("");
+}
+
+formComentario.addEventListener("submit", async (evento) => {
+    evento.preventDefault();
+    mensagemComentario.hidden = true;
+
+    const texto = comentarioTexto.value.trim();
+    if (!texto) return;
+
+    const produtoId = obterIdProdutoDaUrl();
+    try {
+        await apiFetch(`/api/produtos/${produtoId}/comentarios`, {
+            method: "POST",
+            body: JSON.stringify({ texto }),
+        });
+        comentarioTexto.value = "";
+        await renderizarComentarios();
+    } catch (erro) {
+        mensagemComentario.textContent = erro.message;
+        mensagemComentario.className = "mensagem erro";
+        mensagemComentario.hidden = false;
+    }
+});
+
+listaComentarios.addEventListener("click", async (evento) => {
+    const botao = evento.target.closest(".comentario-remover");
+    if (!botao) return;
+
+    await apiFetch(`/api/produtos/comentarios/${botao.dataset.id}`, { method: "DELETE" });
+    await renderizarComentarios();
+    mostrarToast("Comentário removido.");
+});
+
 async function renderizarCarrinho() {
     const produtos = await carregarProdutos();
     const produtosPorId = new Map(produtos.map((produto) => [produto.id, produto]));
@@ -303,6 +375,7 @@ function renderizarConta() {
 
     contaNome.textContent = logado ? `Olá, ${usuario.nome}` : "Minha conta";
     linkEntrarMenu.hidden = logado;
+    linkMinhaContaMenu.hidden = !logado;
     btnSair.hidden = !logado;
 
     const ehAdmin = logado && usuario.papel === "admin";
@@ -311,6 +384,7 @@ function renderizarConta() {
     linkUsuariosMenu.hidden = !ehAdmin;
     linkPromocoesMenu.hidden = !ehAdmin;
     linkCadastrosMenu.hidden = !ehAdmin;
+    linkSuporteMenu.hidden = !ehAdmin;
 }
 
 btnContaMenu.addEventListener("click", (evento) => {
@@ -430,7 +504,7 @@ btnAbrirCarrinho.addEventListener("click", () => {
 btnFecharCarrinho.addEventListener("click", fecharCarrinho);
 overlay.addEventListener("click", fecharCarrinho);
 
-async function finalizarCompra() {
+function finalizarCompra() {
     const carrinho = carregarCarrinho();
     if (carrinho.length === 0) return;
 
@@ -443,24 +517,13 @@ async function finalizarCompra() {
         return;
     }
 
-    btnFinalizar.disabled = true;
-    try {
-        const itens = carrinho.map((item) => ({ produtoId: Number(item.produtoId), quantidade: item.quantidade }));
-        await apiFetch("/api/pedidos", { method: "POST", body: JSON.stringify({ itens }) });
-        salvarCarrinho([]);
-        await renderizarProdutoDetalhe();
-        await renderizarCarrinho();
-        fecharCarrinho();
-        mostrarToast("Pedido realizado com sucesso!");
-    } catch (erro) {
-        mostrarToast(erro.message);
-        btnFinalizar.disabled = false;
-    }
+    window.location.href = "endereco.html";
 }
 
 btnFinalizar.addEventListener("click", finalizarCompra);
 
 renderizarProdutoDetalhe();
 renderizarRelacionados();
+renderizarComentarios();
 renderizarCarrinho();
 renderizarConta();

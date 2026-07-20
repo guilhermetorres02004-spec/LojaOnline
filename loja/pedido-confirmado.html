@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pedido confirmado - WGStore</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="../shared/chat-suporte.css">
+</head>
+<body>
+    <div class="app">
+        <header class="topbar">
+            <div class="topbar-linha">
+                <div class="brand">
+                    <span class="brand-icon brand-icon-letra">W</span>
+                    <div>
+                        <h1>WGStore</h1>
+                    </div>
+                </div>
+
+                <div class="topbar-direita">
+                    <div class="conta-logada" id="conta-logada">
+                        <button type="button" id="btn-conta-menu" class="conta-nome-btn">
+                            <span id="conta-nome">Minha conta</span>
+                            <svg class="chevron" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M6 9L12 15L18 9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </button>
+                        <div class="conta-menu" id="conta-menu" hidden>
+                            <a href="minha-conta.html" id="link-minha-conta-menu" class="conta-menu-item" hidden>Minha conta</a>
+                            <a href="../login/index.html" id="link-entrar-menu" class="conta-menu-item">Entrar</a>
+                            <a href="../estoque/index.html" id="link-estoque-menu" class="conta-menu-item" hidden>Estoque</a>
+                            <a href="../usuarios/index.html" id="link-usuarios-menu" class="conta-menu-item" hidden>Usuários</a>
+                            <a href="../promocoes/index.html" id="link-promocoes-menu" class="conta-menu-item" hidden>Promoções</a>
+                            <a href="../cadastros/index.html" id="link-cadastros-menu" class="conta-menu-item" hidden>Cadastros</a>
+                            <a href="../suporte/index.html" id="link-suporte-menu" class="conta-menu-item" hidden>Suporte</a>
+                            <button type="button" id="btn-sair" class="conta-menu-item conta-menu-sair" hidden>Sair</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <main class="content checkout-content">
+            <section class="card confirmacao-card" id="confirmacao-card" hidden>
+                <div class="confirmacao-icone">
+                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M5 13L9.5 17.5L19 7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </div>
+                <h1>Pedido confirmado!</h1>
+                <p>Pedido <strong id="confirmacao-numero"></strong> &middot; <span id="confirmacao-pagamento"></span></p>
+
+                <div class="confirmacao-resumo" id="confirmacao-resumo"></div>
+
+                <a href="index.html" class="btn btn-primary">Voltar para a loja</a>
+            </section>
+
+            <div class="vazio" id="confirmacao-vazio" hidden>
+                <p>Não encontramos esse pedido. <a href="index.html">Voltar para a loja</a>.</p>
+            </div>
+        </main>
+    </div>
+
+    <script src="pedido-confirmado.js"></script>
+    <script src="../shared/chat-suporte.js"></script>
+</body>
+</html>

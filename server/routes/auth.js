@@ -1,10 +1,37 @@
 const express = require("express");
+const crypto = require("crypto");
 const bcrypt = require("bcryptjs");
 const pool = require("../db");
 const { gerarToken, exigirLogin } = require("../auth");
 const asyncHandler = require("../asyncHandler");
 
 const router = express.Router();
+const VALIDADE_TOKEN_RECUPERACAO_MS = 30 * 60 * 1000;
+const LIMITE_TENTATIVAS_LOGIN = 5;
+const JANELA_TENTATIVAS_LOGIN_MS = 30 * 60 * 1000;
+
+function hashToken(token) {
+    return crypto.createHash("sha256").update(token).digest("hex");
+}
+
+function minutosRestantes(dataFutura) {
+    return Math.max(1, Math.ceil((new Date(dataFutura).getTime() - Date.now()) / 60000));
+}
+
+async function obterEstadoTentativas(email) {
+    const { rows } = await pool.query("SELECT * FROM tentativas_login WHERE email = $1", [email]);
+    const tentativa = rows[0];
+    if (!tentativa) return null;
+
+    const janelaExpirada = Date.now() - new Date(tentativa.primeira_tentativa).getTime() > JANELA_TENTATIVAS_LOGIN_MS;
+    const bloqueioExpirado = !tentativa.bloqueado_ate || new Date(tentativa.bloqueado_ate).getTime() <= Date.now();
+
+    if (janelaExpirada && bloqueioExpirado) {
+        await pool.query("DELETE FROM tentativas_login WHERE email = $1", [email]);
+        return null;
+    }
+    return tentativa;
+}
 
 function cpfValido(cpf) {
     cpf = (cpf || "").replace(/\D/g, "");
@@ -49,21 +76,53 @@ router.post("/login", asyncHandler(async (req, resposta) => {
     const email = (req.body.email || "").trim().toLowerCase();
     const senha = req.body.senha || "";
 
+    if (!email || !senha) {
+        return resposta.status(400).json({ erro: "Informe e-mail e senha." });
+    }
+
+    const tentativa = await obterEstadoTentativas(email);
+    if (tentativa && tentativa.bloqueado_ate && new Date(tentativa.bloqueado_ate) > new Date()) {
+        const minutos = minutosRestantes(tentativa.bloqueado_ate);
+        return resposta.status(429).json({
+            erro: `Muitas tentativas de login. Tente novamente em ${minutos} minuto${minutos === 1 ? "" : "s"}.`,
+        });
+    }
+
     const { rows } = await pool.query("SELECT * FROM usuarios WHERE lower(email) = $1", [email]);
     const usuario = rows[0];
 
-    if (!usuario) {
-        return resposta.status(401).json({ erro: "E-mail ou senha inválidos." });
-    }
+    const senhaOk = usuario ? await bcrypt.compare(senha, usuario.senha_hash) : false;
 
-    const senhaOk = await bcrypt.compare(senha, usuario.senha_hash);
-    if (!senhaOk) {
+    if (!usuario || !senhaOk) {
+        if (!tentativa) {
+            await pool.query(
+                "INSERT INTO tentativas_login (email, tentativas, primeira_tentativa) VALUES ($1, 1, now())",
+                [email]
+            );
+            return resposta.status(401).json({ erro: "E-mail ou senha inválidos." });
+        }
+
+        const novasTentativas = tentativa.tentativas + 1;
+        if (novasTentativas >= LIMITE_TENTATIVAS_LOGIN) {
+            const bloqueadoAte = new Date(Date.now() + JANELA_TENTATIVAS_LOGIN_MS);
+            await pool.query(
+                "UPDATE tentativas_login SET tentativas = $1, bloqueado_ate = $2 WHERE email = $3",
+                [novasTentativas, bloqueadoAte, email]
+            );
+            return resposta.status(429).json({
+                erro: `Muitas tentativas de login. Tente novamente em ${minutosRestantes(bloqueadoAte)} minutos.`,
+            });
+        }
+
+        await pool.query("UPDATE tentativas_login SET tentativas = $1 WHERE email = $2", [novasTentativas, email]);
         return resposta.status(401).json({ erro: "E-mail ou senha inválidos." });
     }
 
     if (usuario.status_cadastro === "pendente") {
         return resposta.status(403).json({ erro: "Seu cadastro ainda está em análise. Aguarde a aprovação do administrador." });
     }
+
+    await pool.query("DELETE FROM tentativas_login WHERE email = $1", [email]);
 
     const token = gerarToken(usuario);
     resposta.json({ token, usuario: { id: usuario.id, nome: usuario.nome, email: usuario.email, papel: usuario.papel } });
@@ -149,9 +208,134 @@ router.post("/cadastro-empresa", asyncHandler(async (req, resposta) => {
 }));
 
 router.get("/me", exigirLogin, asyncHandler(async (req, resposta) => {
-    const { rows } = await pool.query("SELECT id, nome, email, papel FROM usuarios WHERE id = $1", [req.usuario.id]);
+    const { rows } = await pool.query(
+        "SELECT id, nome, email, papel, data_cadastro, compras_realizadas, total_gasto FROM usuarios WHERE id = $1",
+        [req.usuario.id]
+    );
     if (!rows[0]) return resposta.status(404).json({ erro: "Usuário não encontrado." });
-    resposta.json(rows[0]);
+    const usuario = rows[0];
+    resposta.json({
+        id: usuario.id,
+        nome: usuario.nome,
+        email: usuario.email,
+        papel: usuario.papel,
+        dataCadastro: usuario.data_cadastro,
+        comprasRealizadas: usuario.compras_realizadas,
+        totalGasto: Number(usuario.total_gasto),
+    });
+}));
+
+router.put("/email", exigirLogin, asyncHandler(async (req, resposta) => {
+    const novoEmail = (req.body.novoEmail || "").trim().toLowerCase();
+    const senhaAtual = req.body.senhaAtual || "";
+
+    if (!novoEmail || !senhaAtual) {
+        return resposta.status(400).json({ erro: "Preencha o novo e-mail e sua senha atual." });
+    }
+
+    const { rows } = await pool.query("SELECT * FROM usuarios WHERE id = $1", [req.usuario.id]);
+    const usuario = rows[0];
+    const senhaOk = await bcrypt.compare(senhaAtual, usuario.senha_hash);
+    if (!senhaOk) {
+        return resposta.status(401).json({ erro: "Senha atual incorreta." });
+    }
+
+    const existente = await pool.query(
+        "SELECT id FROM usuarios WHERE lower(email) = $1 AND id <> $2",
+        [novoEmail, req.usuario.id]
+    );
+    if (existente.rows.length > 0) {
+        return resposta.status(409).json({ erro: "Já existe uma conta com esse e-mail." });
+    }
+
+    const { rows: atualizados } = await pool.query(
+        "UPDATE usuarios SET email = $1 WHERE id = $2 RETURNING *",
+        [novoEmail, req.usuario.id]
+    );
+    const atualizado = atualizados[0];
+
+    const token = gerarToken(atualizado);
+    resposta.json({ token, usuario: { id: atualizado.id, nome: atualizado.nome, email: atualizado.email, papel: atualizado.papel } });
+}));
+
+router.put("/senha", exigirLogin, asyncHandler(async (req, resposta) => {
+    const senhaAtual = req.body.senhaAtual || "";
+    const novaSenha = req.body.novaSenha || "";
+
+    if (!senhaAtual || !novaSenha) {
+        return resposta.status(400).json({ erro: "Preencha a senha atual e a nova senha." });
+    }
+
+    if (novaSenha.length < 4) {
+        return resposta.status(400).json({ erro: "A nova senha deve ter pelo menos 4 caracteres." });
+    }
+
+    const { rows } = await pool.query("SELECT * FROM usuarios WHERE id = $1", [req.usuario.id]);
+    const usuario = rows[0];
+    const senhaOk = await bcrypt.compare(senhaAtual, usuario.senha_hash);
+    if (!senhaOk) {
+        return resposta.status(401).json({ erro: "Senha atual incorreta." });
+    }
+
+    const novaSenhaHash = await bcrypt.hash(novaSenha, 10);
+    await pool.query("UPDATE usuarios SET senha_hash = $1 WHERE id = $2", [novaSenhaHash, req.usuario.id]);
+    resposta.json({ mensagem: "Senha atualizada com sucesso." });
+}));
+
+router.post("/esqueci-senha", asyncHandler(async (req, resposta) => {
+    const email = (req.body.email || "").trim().toLowerCase();
+    if (!email) {
+        return resposta.status(400).json({ erro: "Informe seu e-mail." });
+    }
+
+    const { rows } = await pool.query("SELECT id FROM usuarios WHERE lower(email) = $1", [email]);
+    const usuario = rows[0];
+    if (!usuario) {
+        return resposta.status(404).json({ erro: "Não encontramos nenhuma conta com esse e-mail." });
+    }
+
+    const token = crypto.randomBytes(32).toString("hex");
+    const expiraEm = new Date(Date.now() + VALIDADE_TOKEN_RECUPERACAO_MS);
+
+    await pool.query(
+        "UPDATE usuarios SET reset_token_hash = $1, reset_token_expira = $2 WHERE id = $3",
+        [hashToken(token), expiraEm, usuario.id]
+    );
+
+    resposta.json({
+        mensagem: "Link de recuperação gerado! Como este é um ambiente local, ele aparece abaixo em vez de ser enviado por e-mail.",
+        token,
+        expiraEm,
+    });
+}));
+
+router.post("/redefinir-senha", asyncHandler(async (req, resposta) => {
+    const token = req.body.token || "";
+    const novaSenha = req.body.novaSenha || "";
+
+    if (!token || !novaSenha) {
+        return resposta.status(400).json({ erro: "Link inválido." });
+    }
+    if (novaSenha.length < 4) {
+        return resposta.status(400).json({ erro: "A nova senha deve ter pelo menos 4 caracteres." });
+    }
+
+    const { rows } = await pool.query(
+        "SELECT * FROM usuarios WHERE reset_token_hash = $1",
+        [hashToken(token)]
+    );
+    const usuario = rows[0];
+    if (!usuario || !usuario.reset_token_expira || new Date(usuario.reset_token_expira) < new Date()) {
+        return resposta.status(400).json({ erro: "Esse link de recuperação é inválido ou expirou. Peça um novo." });
+    }
+
+    const novaSenhaHash = await bcrypt.hash(novaSenha, 10);
+    await pool.query(
+        "UPDATE usuarios SET senha_hash = $1, reset_token_hash = NULL, reset_token_expira = NULL WHERE id = $2",
+        [novaSenhaHash, usuario.id]
+    );
+
+    resposta.json({ mensagem: "Senha redefinida com sucesso! Você já pode entrar com a nova senha." });
 }));
 
 module.exports = router;

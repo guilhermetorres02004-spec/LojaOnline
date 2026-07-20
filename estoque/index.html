@@ -8,6 +8,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="../shared/chat-suporte.css">
 </head>
 <body>
     <div class="app" id="app-estoque">
@@ -29,6 +30,8 @@
                 <a href="../cadastros/index.html" id="link-cadastros" class="link-loja">Cadastros</a>
                 <a href="../usuarios/index.html" id="link-usuarios" class="link-loja">Usuários</a>
                 <a href="../promocoes/index.html" id="link-promocoes" class="link-loja">Promoções</a>
+                <a href="../suporte/index.html" id="link-suporte" class="link-loja">Suporte</a>
+                <a href="../pedidos/index.html" id="link-pedidos" class="link-loja">Pedidos <span class="badge-pedidos" id="badge-pedidos" hidden>0</span></a>
                 <a href="../loja/index.html" class="link-loja">Ver loja</a>
             </nav>
         </header>
@@ -166,5 +169,7 @@
     </div>
 
     <script src="script.js"></script>
+    <script src="../shared/chat-suporte.js"></script>
+    <script src="../shared/notificacao-pedidos.js"></script>
 </body>
 </html>

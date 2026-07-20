@@ -8,6 +8,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="../shared/chat-suporte.css">
 </head>
 <body>
     <div class="app">
@@ -31,11 +32,13 @@
                         </button>
                         <div class="conta-menu" id="conta-menu" hidden>
                             <button type="button" id="btn-abrir-carrinho" class="conta-menu-item">Carrinho</button>
+                            <a href="minha-conta.html" id="link-minha-conta-menu" class="conta-menu-item" hidden>Minha conta</a>
                             <a href="../login/index.html" id="link-entrar-menu" class="conta-menu-item">Entrar</a>
                             <a href="../estoque/index.html" id="link-estoque-menu" class="conta-menu-item" hidden>Estoque</a>
                             <a href="../usuarios/index.html" id="link-usuarios-menu" class="conta-menu-item" hidden>Usuários</a>
                             <a href="../promocoes/index.html" id="link-promocoes-menu" class="conta-menu-item" hidden>Promoções</a>
                             <a href="../cadastros/index.html" id="link-cadastros-menu" class="conta-menu-item" hidden>Cadastros</a>
+                            <a href="../suporte/index.html" id="link-suporte-menu" class="conta-menu-item" hidden>Suporte</a>
                             <button type="button" id="btn-sair" class="conta-menu-item conta-menu-sair" hidden>Sair</button>
                         </div>
                     </div>
@@ -49,6 +52,25 @@
 
         <main class="content">
             <section class="card produto-detalhe" id="produto-detalhe"></section>
+
+            <section class="card comentarios-produto" id="comentarios-produto" hidden>
+                <h2>Comentários</h2>
+
+                <div class="comentario-login" id="comentario-login" hidden>
+                    <p>Faça login para deixar um comentário.</p>
+                    <a href="../login/index.html" class="btn btn-primary">Entrar</a>
+                </div>
+
+                <form class="comentario-form" id="form-comentario" hidden>
+                    <textarea id="comentario-texto" rows="3" placeholder="O que você achou deste produto?" maxlength="1000" required></textarea>
+                    <p class="mensagem" id="mensagem-comentario" hidden></p>
+                    <button type="submit" class="btn btn-primary">Enviar comentário</button>
+                </form>
+
+                <div class="lista-comentarios" id="lista-comentarios"></div>
+
+                <p class="comentarios-vazio" id="comentarios-vazio" hidden>Nenhum comentário ainda. Seja o primeiro a comentar!</p>
+            </section>
 
             <section class="produtos-relacionados" id="produtos-relacionados" hidden>
                 <h2>Você também pode gostar</h2>
@@ -92,5 +114,6 @@
     <div class="toast" id="toast"></div>
 
     <script src="produto.js"></script>
+    <script src="../shared/chat-suporte.js"></script>
 </body>
 </html>

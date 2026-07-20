@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minha conta - WGStore</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="../shared/chat-suporte.css">
+</head>
+<body>
+    <div class="app">
+        <header class="topbar">
+            <div class="topbar-linha">
+                <div class="brand">
+                    <span class="brand-icon brand-icon-letra">W</span>
+                    <div>
+                        <h1>WGStore</h1>
+                    </div>
+                </div>
+
+                <div class="topbar-direita">
+                    <div class="conta-logada" id="conta-logada">
+                        <button type="button" id="btn-conta-menu" class="conta-nome-btn">
+                            <span id="conta-nome">Minha conta</span>
+                            <svg class="chevron" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M6 9L12 15L18 9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </button>
+                        <div class="conta-menu" id="conta-menu" hidden>
+                            <a href="minha-conta.html" id="link-minha-conta-menu" class="conta-menu-item" hidden>Minha conta</a>
+                            <a href="../login/index.html" id="link-entrar-menu" class="conta-menu-item">Entrar</a>
+                            <a href="../estoque/index.html" id="link-estoque-menu" class="conta-menu-item" hidden>Estoque</a>
+                            <a href="../usuarios/index.html" id="link-usuarios-menu" class="conta-menu-item" hidden>Usuários</a>
+                            <a href="../promocoes/index.html" id="link-promocoes-menu" class="conta-menu-item" hidden>Promoções</a>
+                            <a href="../cadastros/index.html" id="link-cadastros-menu" class="conta-menu-item" hidden>Cadastros</a>
+                            <a href="../suporte/index.html" id="link-suporte-menu" class="conta-menu-item" hidden>Suporte</a>
+                            <button type="button" id="btn-sair" class="conta-menu-item conta-menu-sair" hidden>Sair</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="topbar-linha topbar-acoes">
+                <a href="index.html" class="link-admin">&larr; Voltar para a loja</a>
+            </div>
+        </header>
+
+        <main class="content conta-content">
+            <section class="card conta-perfil">
+                <div class="conta-perfil-topo">
+                    <div>
+                        <h1 id="perfil-nome"></h1>
+                        <p id="perfil-email"></p>
+                        <span class="papel-badge" id="perfil-papel"></span>
+                    </div>
+                    <div class="conta-stats">
+                        <div class="conta-stat">
+                            <span class="conta-stat-label">Compras realizadas</span>
+                            <span class="conta-stat-valor" id="stat-compras">0</span>
+                        </div>
+                        <div class="conta-stat">
+                            <span class="conta-stat-label">Total gasto</span>
+                            <span class="conta-stat-valor" id="stat-gasto">R$ 0,00</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <div class="conta-grid">
+                <section class="card">
+                    <h2>Alterar e-mail</h2>
+                    <form id="form-email">
+                        <div class="campo">
+                            <label for="email-novo">Novo e-mail</label>
+                            <input type="email" id="email-novo" placeholder="novo@email.com" required>
+                        </div>
+                        <div class="campo">
+                            <label for="email-senha">Senha atual</label>
+                            <input type="password" id="email-senha" placeholder="Confirme sua senha" required>
+                        </div>
+                        <p class="mensagem" id="mensagem-email" hidden></p>
+                        <button type="submit" class="btn btn-primary">Salvar e-mail</button>
+                    </form>
+                </section>
+
+                <section class="card">
+                    <h2>Alterar senha</h2>
+                    <form id="form-senha">
+                        <div class="campo">
+                            <label for="senha-atual">Senha atual</label>
+                            <input type="password" id="senha-atual" required>
+                        </div>
+                        <div class="campo">
+                            <label for="senha-nova">Nova senha</label>
+                            <input type="password" id="senha-nova" required>
+                        </div>
+                        <div class="campo">
+                            <label for="senha-confirmar">Confirmar nova senha</label>
+                            <input type="password" id="senha-confirmar" required>
+                        </div>
+                        <p class="mensagem" id="mensagem-senha" hidden></p>
+                        <button type="submit" class="btn btn-primary">Salvar senha</button>
+                    </form>
+                </section>
+            </div>
+
+            <section class="card conta-pedidos">
+                <h2>Histórico de compras</h2>
+                <div id="lista-pedidos"></div>
+                <div class="vazio" id="pedidos-vazio" hidden>
+                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M3 7L12 3L21 7V17L12 21L3 17V7Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
+                        <path d="M3 7L12 11L21 7" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
+                        <path d="M12 11V21" stroke="currentColor" stroke-width="1.4"/>
+                    </svg>
+                    <p>Você ainda não fez nenhuma compra.</p>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script src="minha-conta.js"></script>
+    <script src="../shared/chat-suporte.js"></script>
+</body>
+</html>

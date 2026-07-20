@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Suporte ao cliente</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app" id="app-suporte">
+        <header class="topbar">
+            <div class="brand">
+                <span class="brand-icon">
+                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M4 12C4 7.58 7.8 4 12.5 4S21 7.58 21 12s-3.8 8-8.5 8c-1.02 0-2-.17-2.9-.49L5 21l1.3-3.9C4.86 15.77 4 13.98 4 12Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+                    </svg>
+                </span>
+                <div>
+                    <h1>Suporte ao cliente</h1>
+                    <p>Converse com clientes e responda dúvidas</p>
+                </div>
+            </div>
+            <nav class="topbar-nav">
+                <a href="../cadastros/index.html" id="link-cadastros" class="link-loja">Cadastros</a>
+                <a href="../estoque/index.html" id="link-estoque" class="link-loja">Estoque</a>
+                <a href="../usuarios/index.html" id="link-usuarios" class="link-loja">Usuários</a>
+                <a href="../promocoes/index.html" id="link-promocoes" class="link-loja">Promoções</a>
+                <a href="../pedidos/index.html" id="link-pedidos" class="link-loja">Pedidos <span class="badge-pedidos" id="badge-pedidos" hidden>0</span></a>
+                <a href="../loja/index.html" id="link-loja" class="link-loja">Ver loja</a>
+            </nav>
+        </header>
+
+        <main class="content">
+            <section class="grid">
+                <div class="card lista-card">
+                    <div class="lista-cabecalho">
+                        <h2>Conversas</h2>
+                        <span class="badge" id="contador-conversas">0</span>
+                    </div>
+                    <div class="lista-conversas" id="lista-conversas"></div>
+                    <div class="vazio" id="vazio-conversas">
+                        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M4 12C4 7.58 7.8 4 12.5 4S21 7.58 21 12s-3.8 8-8.5 8c-1.02 0-2-.17-2.9-.49L5 21l1.3-3.9C4.86 15.77 4 13.98 4 12Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
+                        </svg>
+                        <p>Nenhuma conversa ainda.</p>
+                    </div>
+                </div>
+
+                <div class="card conversa-card">
+                    <div class="conversa-vazia" id="conversa-vazia">
+                        <p>Selecione uma conversa para ver as mensagens.</p>
+                    </div>
+
+                    <div class="conversa-ativa" id="conversa-ativa" hidden>
+                        <div class="conversa-cabecalho">
+                            <div>
+                                <h2 id="conversa-nome"></h2>
+                                <p id="conversa-email"></p>
+                            </div>
+                        </div>
+                        <div class="conversa-mensagens" id="conversa-mensagens"></div>
+                        <form class="conversa-form" id="conversa-form">
+                            <input type="text" id="conversa-input" placeholder="Escreva uma resposta..." autocomplete="off" maxlength="1000">
+                            <button type="submit" class="btn btn-primary">Enviar</button>
+                        </form>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <div class="acesso-negado" id="acesso-negado" hidden>
+        <section class="card">
+            <h2>Acesso restrito</h2>
+            <p>Esta área é exclusiva para administradores.</p>
+            <a href="../loja/index.html" class="btn btn-primary">Voltar para a loja</a>
+        </section>
+    </div>
+
+    <script src="script.js"></script>
+    <script src="../shared/notificacao-pedidos.js"></script>
+</body>
+</html>

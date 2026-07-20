@@ -127,4 +127,61 @@ router.delete("/:id", exigirLogin, exigirPapel("admin", "vendedor"), asyncHandle
     resposta.json({ removido: true });
 }));
 
+function paraComentario(linha) {
+    return {
+        id: linha.id,
+        produtoId: linha.produto_id,
+        usuarioId: linha.usuario_id,
+        autorNome: linha.autor_nome,
+        texto: linha.texto,
+        criadoEm: linha.criado_em,
+    };
+}
+
+router.get("/:id/comentarios", asyncHandler(async (req, resposta) => {
+    const { rows } = await pool.query(
+        `SELECT c.*, u.nome AS autor_nome
+         FROM comentarios_produto c
+         JOIN usuarios u ON u.id = c.usuario_id
+         WHERE c.produto_id = $1
+         ORDER BY c.criado_em DESC`,
+        [req.params.id]
+    );
+    resposta.json(rows.map(paraComentario));
+}));
+
+router.post("/:id/comentarios", exigirLogin, asyncHandler(async (req, resposta) => {
+    const texto = (req.body.texto || "").trim();
+    if (!texto) {
+        return resposta.status(400).json({ erro: "Escreva um comentário antes de enviar." });
+    }
+    if (texto.length > 1000) {
+        return resposta.status(400).json({ erro: "O comentário pode ter no máximo 1000 caracteres." });
+    }
+
+    const { rows: produtos } = await pool.query("SELECT id FROM produtos WHERE id = $1", [req.params.id]);
+    if (!produtos[0]) return resposta.status(404).json({ erro: "Produto não encontrado." });
+
+    const { rows } = await pool.query(
+        "INSERT INTO comentarios_produto (produto_id, usuario_id, texto) VALUES ($1, $2, $3) RETURNING *",
+        [req.params.id, req.usuario.id, texto]
+    );
+    resposta.status(201).json(paraComentario({ ...rows[0], autor_nome: req.usuario.nome }));
+}));
+
+router.delete("/comentarios/:id", exigirLogin, asyncHandler(async (req, resposta) => {
+    const { rows } = await pool.query("SELECT * FROM comentarios_produto WHERE id = $1", [req.params.id]);
+    const comentario = rows[0];
+    if (!comentario) return resposta.status(404).json({ erro: "Comentário não encontrado." });
+
+    const ehAutor = comentario.usuario_id === req.usuario.id;
+    const ehAdmin = req.usuario.papel === "admin";
+    if (!ehAutor && !ehAdmin) {
+        return resposta.status(403).json({ erro: "Você não tem permissão para remover este comentário." });
+    }
+
+    await pool.query("DELETE FROM comentarios_produto WHERE id = $1", [req.params.id]);
+    resposta.json({ removido: true });
+}));
+
 module.exports = router;
