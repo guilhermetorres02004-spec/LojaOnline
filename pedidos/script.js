@@ -56,6 +56,7 @@ document.getElementById("acesso-negado").hidden = autorizado;
 if (autorizado) {
     document.getElementById("link-cadastros").hidden = !ehAdmin;
     document.getElementById("link-usuarios").hidden = !ehAdmin;
+    document.getElementById("link-descontos").hidden = !ehAdmin;
     document.getElementById("link-promocoes").hidden = !ehAdmin;
     document.getElementById("link-suporte").hidden = !ehAdmin;
 }

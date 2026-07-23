@@ -209,11 +209,16 @@ router.post("/cadastro-empresa", asyncHandler(async (req, resposta) => {
 
 router.get("/me", exigirLogin, asyncHandler(async (req, resposta) => {
     const { rows } = await pool.query(
-        "SELECT id, nome, email, papel, data_cadastro, compras_realizadas, total_gasto FROM usuarios WHERE id = $1",
+        `SELECT id, nome, email, papel, data_cadastro, compras_realizadas, total_gasto,
+                desconto_percentual, desconto_validade
+         FROM usuarios WHERE id = $1`,
         [req.usuario.id]
     );
     if (!rows[0]) return resposta.status(404).json({ erro: "Usuário não encontrado." });
     const usuario = rows[0];
+    const hoje = new Date().toISOString().split("T")[0];
+    const descontoAtivo = usuario.desconto_percentual > 0 &&
+        usuario.desconto_validade && usuario.desconto_validade >= hoje;
     resposta.json({
         id: usuario.id,
         nome: usuario.nome,
@@ -222,6 +227,8 @@ router.get("/me", exigirLogin, asyncHandler(async (req, resposta) => {
         dataCadastro: usuario.data_cadastro,
         comprasRealizadas: usuario.compras_realizadas,
         totalGasto: Number(usuario.total_gasto),
+        descontoPercentual: descontoAtivo ? usuario.desconto_percentual : 0,
+        descontoValidade: descontoAtivo ? usuario.desconto_validade : null,
     });
 }));
 

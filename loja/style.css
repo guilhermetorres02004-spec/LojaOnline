@@ -765,6 +765,17 @@ a.carrossel-slide {
     color: #8a5a1f;
 }
 
+.desconto-badge {
+    display: inline-block;
+    margin-top: 0.5rem;
+    padding: 0.2rem 0.6rem;
+    border-radius: 999px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    background-color: var(--success-soft);
+    color: var(--success);
+}
+
 .conta-stats {
     display: flex;
     gap: 1.5rem;

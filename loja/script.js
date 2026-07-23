@@ -48,6 +48,7 @@ const linkEntrarMenu = document.getElementById("link-entrar-menu");
 const linkMinhaContaMenu = document.getElementById("link-minha-conta-menu");
 const linkEstoqueMenu = document.getElementById("link-estoque-menu");
 const linkUsuariosMenu = document.getElementById("link-usuarios-menu");
+const linkDescontosMenu = document.getElementById("link-descontos-menu");
 const linkPromocoesMenu = document.getElementById("link-promocoes-menu");
 const linkCadastrosMenu = document.getElementById("link-cadastros-menu");
 const linkSuporteMenu = document.getElementById("link-suporte-menu");
@@ -394,6 +395,7 @@ function renderizarConta() {
     const ehVendedor = logado && usuario.papel === "vendedor";
     linkEstoqueMenu.hidden = !(ehAdmin || ehVendedor);
     linkUsuariosMenu.hidden = !ehAdmin;
+    linkDescontosMenu.hidden = !ehAdmin;
     linkPromocoesMenu.hidden = !ehAdmin;
     linkCadastrosMenu.hidden = !ehAdmin;
     linkSuporteMenu.hidden = !ehAdmin;

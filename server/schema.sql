@@ -13,9 +13,14 @@ CREATE TABLE IF NOT EXISTS usuarios (
     data_cadastro TIMESTAMPTZ NOT NULL DEFAULT now(),
     compras_realizadas INTEGER NOT NULL DEFAULT 0,
     total_gasto NUMERIC(12, 2) NOT NULL DEFAULT 0,
+    desconto_percentual INTEGER NOT NULL DEFAULT 0,
+    desconto_validade DATE,
     reset_token_hash TEXT,
     reset_token_expira TIMESTAMPTZ
 );
+
+ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS desconto_percentual INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS desconto_validade DATE;
 
 CREATE TABLE IF NOT EXISTS produtos (
     id SERIAL PRIMARY KEY,

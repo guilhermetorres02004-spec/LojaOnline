@@ -57,6 +57,7 @@ const linkEntrarMenu = document.getElementById("link-entrar-menu");
 const linkMinhaContaMenu = document.getElementById("link-minha-conta-menu");
 const linkEstoqueMenu = document.getElementById("link-estoque-menu");
 const linkUsuariosMenu = document.getElementById("link-usuarios-menu");
+const linkDescontosMenu = document.getElementById("link-descontos-menu");
 const linkPromocoesMenu = document.getElementById("link-promocoes-menu");
 const linkCadastrosMenu = document.getElementById("link-cadastros-menu");
 const linkSuporteMenu = document.getElementById("link-suporte-menu");
@@ -80,6 +81,7 @@ function renderizarConta() {
     const ehVendedor = logado && usuario.papel === "vendedor";
     linkEstoqueMenu.hidden = !(ehAdmin || ehVendedor);
     linkUsuariosMenu.hidden = !ehAdmin;
+    linkDescontosMenu.hidden = !ehAdmin;
     linkPromocoesMenu.hidden = !ehAdmin;
     linkCadastrosMenu.hidden = !ehAdmin;
     linkSuporteMenu.hidden = !ehAdmin;
@@ -122,6 +124,14 @@ async function renderizarPerfil() {
     const badgePapel = document.getElementById("perfil-papel");
     badgePapel.textContent = rotuloPapel(dados.papel);
     badgePapel.className = `papel-badge ${dados.papel}`;
+
+    const badgeDesconto = document.getElementById("perfil-desconto");
+    if (dados.descontoPercentual > 0) {
+        badgeDesconto.textContent = `${dados.descontoPercentual}% de desconto até ${formatarData(dados.descontoValidade)}`;
+        badgeDesconto.hidden = false;
+    } else {
+        badgeDesconto.hidden = true;
+    }
 
     document.getElementById("stat-compras").textContent = dados.comprasRealizadas;
     document.getElementById("stat-gasto").textContent = formatarPreco(dados.totalGasto);

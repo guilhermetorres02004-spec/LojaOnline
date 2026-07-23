@@ -38,6 +38,8 @@ function paraUsuario(linha) {
         dataCadastro: linha.data_cadastro,
         comprasRealizadas: linha.compras_realizadas,
         totalGasto: Number(linha.total_gasto),
+        descontoPercentual: linha.desconto_percentual || 0,
+        descontoValidade: linha.desconto_validade,
     };
 }
 
@@ -82,6 +84,28 @@ router.post("/", asyncHandler(async (req, resposta) => {
         [nome, email, senhaHash, cpf, papel]
     );
     resposta.status(201).json(paraUsuario(rows[0]));
+}));
+
+router.put("/descontos", asyncHandler(async (req, resposta) => {
+    const ids = Array.isArray(req.body.ids) ? req.body.ids.map(Number).filter((id) => Number.isInteger(id)) : [];
+    const percentual = Number(req.body.percentual);
+    const validade = req.body.validade;
+
+    if (ids.length === 0) {
+        return resposta.status(400).json({ erro: "Selecione ao menos um cliente." });
+    }
+    if (!percentual || percentual < 1 || percentual > 90) {
+        return resposta.status(400).json({ erro: "Informe um desconto entre 1% e 90%." });
+    }
+    if (!validade) {
+        return resposta.status(400).json({ erro: "Escolha a data em que o desconto termina." });
+    }
+
+    const { rows } = await pool.query(
+        "UPDATE usuarios SET desconto_percentual = $1, desconto_validade = $2 WHERE id = ANY($3::int[]) RETURNING *",
+        [percentual, validade, ids]
+    );
+    resposta.json(rows.map(paraUsuario));
 }));
 
 router.put("/:id", asyncHandler(async (req, resposta) => {
@@ -129,6 +153,47 @@ router.put("/:id", asyncHandler(async (req, resposta) => {
         [nome, email, cpfFinal, papel, senhaHash, req.params.id]
     );
     resposta.json(paraUsuario(rows[0]));
+}));
+
+router.delete("/:id/desconto", asyncHandler(async (req, resposta) => {
+    const { rows } = await pool.query(
+        "UPDATE usuarios SET desconto_percentual = 0, desconto_validade = NULL WHERE id = $1 RETURNING *",
+        [req.params.id]
+    );
+    if (!rows[0]) return resposta.status(404).json({ erro: "Usuário não encontrado." });
+    resposta.json(paraUsuario(rows[0]));
+}));
+
+router.get("/:id/pedidos", asyncHandler(async (req, resposta) => {
+    const { rows: pedidos } = await pool.query(
+        "SELECT * FROM pedidos WHERE usuario_id = $1 ORDER BY criado_em DESC",
+        [req.params.id]
+    );
+    if (pedidos.length === 0) return resposta.json([]);
+
+    const { rows: itens } = await pool.query(
+        `SELECT pi.pedido_id, pi.quantidade, pi.preco_unitario, pi.status, p.nome
+         FROM pedido_itens pi
+         LEFT JOIN produtos p ON p.id = pi.produto_id
+         WHERE pi.pedido_id = ANY($1::int[])`,
+        [pedidos.map((pedido) => pedido.id)]
+    );
+
+    resposta.json(pedidos.map((pedido) => ({
+        id: pedido.id,
+        total: Number(pedido.total),
+        endereco: pedido.endereco,
+        metodoPagamento: pedido.metodo_pagamento,
+        criadoEm: pedido.criado_em,
+        itens: itens
+            .filter((item) => item.pedido_id === pedido.id)
+            .map((item) => ({
+                nome: item.nome || "Produto removido",
+                quantidade: item.quantidade,
+                precoUnitario: Number(item.preco_unitario),
+                status: item.status,
+            })),
+    })));
 }));
 
 module.exports = router;

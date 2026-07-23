@@ -41,6 +41,17 @@ router.post("/", exigirLogin, asyncHandler(async (req, resposta) => {
     try {
         await client.query("BEGIN");
 
+        const { rows: compradorRows } = await client.query(
+            "SELECT desconto_percentual, desconto_validade FROM usuarios WHERE id = $1",
+            [req.usuario.id]
+        );
+        const comprador = compradorRows[0];
+        const hoje = new Date().toISOString().split("T")[0];
+        const descontoUsuario = comprador && comprador.desconto_percentual > 0 &&
+            comprador.desconto_validade && comprador.desconto_validade >= hoje
+            ? comprador.desconto_percentual
+            : 0;
+
         let total = 0;
         const itensComprados = [];
 
@@ -56,7 +67,7 @@ router.post("/", exigirLogin, asyncHandler(async (req, resposta) => {
             const quantidadeComprada = Math.min(quantidadeDesejada, produto.quantidade);
             if (quantidadeComprada <= 0) continue;
 
-            const precoUnitario = precoEfetivo(produto);
+            const precoUnitario = precoEfetivo(produto) * (1 - descontoUsuario / 100);
             total += precoUnitario * quantidadeComprada;
 
             await client.query("UPDATE produtos SET quantidade = quantidade - $1 WHERE id = $2", [
